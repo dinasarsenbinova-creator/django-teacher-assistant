@@ -1197,6 +1197,7 @@ def quiz_participants(request, pk):
     """Список участников викторины и их результаты."""
     quiz = get_object_or_404(Quiz, pk=pk, teacher=request.user)
     participants, attempts = _build_quiz_participants_data(quiz)
+    winners = _get_quiz_winners(quiz)
 
     context = {
         'quiz': quiz,
@@ -1204,6 +1205,7 @@ def quiz_participants(request, pk):
         'participants': participants,
         'participants_count': len(participants),
         'attempts_count': attempts.count(),
+        'winners': winners,  # Топ-3 победители
     }
     return render(request, 'teacher/quiz_participants.html', context)
 
@@ -1222,6 +1224,7 @@ def _build_quiz_participants_data(quiz):
                 'best_score': attempt.score,
                 'best_percentage': float(attempt.percentage),
                 'last_attempt': attempt.completed_at,
+                'best_time': attempt.time_spent,  # Время для первой попытки
             }
 
         item = participants_map[name]
@@ -1229,6 +1232,10 @@ def _build_quiz_participants_data(quiz):
         if attempt.percentage > item['best_percentage']:
             item['best_percentage'] = float(attempt.percentage)
             item['best_score'] = attempt.score
+            item['best_time'] = attempt.time_spent  # Обновляем время лучшего результата
+        elif attempt.percentage == item['best_percentage'] and attempt.time_spent < item['best_time']:
+            # При равном проценте берем результат с меньшим временем
+            item['best_time'] = attempt.time_spent
         if attempt.completed_at > item['last_attempt']:
             item['last_attempt'] = attempt.completed_at
 
@@ -1238,6 +1245,41 @@ def _build_quiz_participants_data(quiz):
         reverse=True,
     )
     return participants, attempts
+
+
+def _get_quiz_winners(quiz):
+    """
+    Определяет трех победителей викторины.
+    Критерии сортировки:
+    1. Процент выполнения (выше лучше)
+    2. Время выполнения (меньше лучше)
+    """
+    attempts = quiz.attempts.all()
+    
+    if not attempts.exists():
+        return []
+    
+    # Группируем попытки по студентам и берем лучший результат каждого
+    participants_map = {}
+    for attempt in attempts:
+        name = attempt.student_name or 'Неизвестный'
+        if name not in participants_map:
+            participants_map[name] = attempt
+        else:
+            # Обновляем если найдена лучшая попытка
+            existing = participants_map[name]
+            if attempt.percentage > existing.percentage:
+                participants_map[name] = attempt
+            elif attempt.percentage == existing.percentage and attempt.time_spent < existing.time_spent:
+                participants_map[name] = attempt
+    
+    # Сортируем по проценту (убывание) и времени (возрастание)
+    winners = sorted(
+        participants_map.values(),
+        key=lambda x: (-x.percentage, x.time_spent)  # Минус для убывающей сортировки процента
+    )[:3]
+    
+    return winners
 
 
 @login_required
