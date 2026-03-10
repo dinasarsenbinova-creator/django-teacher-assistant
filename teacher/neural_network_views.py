@@ -775,14 +775,16 @@ def generate_homework_local(subject, topic, class_level, difficulty, lesson_type
 
 def generate_quiz_helper(request):
     """Помощник в генерации викторины с помощью ИИ"""
-    if request.method == 'POST':
-        # Проверка авторизации для JSON endpoint
-        if not request.user.is_authenticated:
+    if not request.user.is_authenticated:
+        if request.method == 'POST':
             return JsonResponse({
                 'success': False,
-                'error': 'Требуется авторизация'
+                'error': 'Требуется авторизация',
+                'login_url': f"/accounts/login/?next={request.path}",
             }, status=401)
-        
+        return redirect(f"/accounts/login/?next={request.path}")
+
+    if request.method == 'POST':
         try:
             payload = {}
             if request.content_type and 'application/json' in request.content_type:

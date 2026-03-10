@@ -255,6 +255,11 @@ document.getElementById('quizForm').addEventListener('submit', function(e) {
 
         const data = result.data;
 
+        if (result.status === 401 || data.login_url) {
+            window.location.href = data.login_url || '/accounts/login/?next=/teacher/quiz-generator/';
+            return;
+        }
+
         if (data.success) {
             if (data.warning) {
                 showError(data.warning);
