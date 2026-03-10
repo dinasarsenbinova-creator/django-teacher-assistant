@@ -775,17 +775,22 @@ def generate_homework_local(subject, topic, class_level, difficulty, lesson_type
 
 def generate_quiz_helper(request):
     """Помощник в генерации викторины с помощью ИИ"""
-    if not request.user.is_authenticated:
-        if request.method == 'POST':
-            return JsonResponse({
-                'success': False,
-                'error': 'Требуется авторизация',
-                'login_url': f"/accounts/login/?next={request.path}",
-            }, status=401)
-        return redirect(f"/accounts/login/?next={request.path}")
-
     if request.method == 'POST':
+        # Значения по умолчанию, чтобы безопасно использовать их в fallback.
+        subject_name = ''
+        topic_name = ''
+        class_level = ''
+        difficulty = 'medium'
+        questions_count = 5
+
         try:
+            if not request.user.is_authenticated:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Требуется авторизация',
+                    'login_url': f"/accounts/login/?next={request.path}",
+                }, status=401)
+
             payload = {}
             if request.content_type and 'application/json' in request.content_type:
                 try:
@@ -827,10 +832,7 @@ def generate_quiz_helper(request):
                     questions_count=questions_count,
                 )
 
-            return JsonResponse({
-                'success': True,
-                'quiz': quiz_data
-            })
+            return JsonResponse({'success': True, 'quiz': quiz_data})
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
@@ -858,6 +860,9 @@ def generate_quiz_helper(request):
                 'error': str(e),
                 'details': error_details if settings.DEBUG else 'Ошибка генерации викторины'
             }, status=500)
+
+    if not request.user.is_authenticated:
+        return redirect(f"/accounts/login/?next={request.path}")
 
     # Проверка доступности OpenAI
     openai_enabled = _is_openai_enabled()
