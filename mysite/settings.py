@@ -7,8 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me-for-production")
 DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
 ALLOWED_HOSTS_ENV = os.getenv("DJANGO_ALLOWED_HOSTS", "").strip()
+RAILWAY_PUBLIC_DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
 if ALLOWED_HOSTS_ENV:
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()]
+elif RAILWAY_PUBLIC_DOMAIN:
+    # Автоматически подхватываем Railway-домен, если переменная DJANGO_ALLOWED_HOSTS не задана.
+    ALLOWED_HOSTS = [RAILWAY_PUBLIC_DOMAIN]
 elif DEBUG:
     # В локальной сети это позволяет открывать сайт по IP компьютера преподавателя.
     ALLOWED_HOSTS = ["*"]
@@ -19,9 +23,9 @@ else:
 CSRF_TRUSTED_ORIGINS_ENV = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
 if CSRF_TRUSTED_ORIGINS_ENV:
     CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS_ENV.split(",") if origin.strip()]
-elif os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+elif RAILWAY_PUBLIC_DOMAIN:
     # Automatically add Railway domain
-    CSRF_TRUSTED_ORIGINS = [f"https://{os.getenv('RAILWAY_PUBLIC_DOMAIN')}"]
+    CSRF_TRUSTED_ORIGINS = [f"https://{RAILWAY_PUBLIC_DOMAIN}"]
 else:
     CSRF_TRUSTED_ORIGINS = []
 
