@@ -15,6 +15,16 @@ elif DEBUG:
 else:
     ALLOWED_HOSTS = []
 
+# CSRF trusted origins for Railway and other deployments
+CSRF_TRUSTED_ORIGINS_ENV = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
+if CSRF_TRUSTED_ORIGINS_ENV:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS_ENV.split(",") if origin.strip()]
+elif os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    # Automatically add Railway domain
+    CSRF_TRUSTED_ORIGINS = [f"https://{os.getenv('RAILWAY_PUBLIC_DOMAIN')}"]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+
 # Публичный адрес сервера (опционально), например: http://192.168.1.25:8000
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
 
