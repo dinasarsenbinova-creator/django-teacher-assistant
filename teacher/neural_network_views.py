@@ -53,6 +53,7 @@ def _openai_chat_completion(messages, max_tokens=500, temperature=0.7):
 
     model_name = (os.getenv('OPENAI_MODEL', 'gpt-4o-mini') or 'gpt-4o-mini').strip()
     web_search_enabled = (os.getenv('OPENAI_WEB_SEARCH', 'False').lower() == 'true')
+    request_timeout = int(os.getenv('OPENAI_TIMEOUT_SECONDS', '20'))
 
     # Новый SDK (openai>=1.x)
     if hasattr(openai, 'OpenAI'):
@@ -74,6 +75,7 @@ def _openai_chat_completion(messages, max_tokens=500, temperature=0.7):
                     model=model_name,
                     input=input_messages,
                     tools=[{"type": "web_search_preview"}],
+                    timeout=request_timeout,
                 )
                 output_text = getattr(response, 'output_text', '')
                 if output_text:
@@ -87,6 +89,7 @@ def _openai_chat_completion(messages, max_tokens=500, temperature=0.7):
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
+            timeout=request_timeout,
         )
         return (response.choices[0].message.content or '').strip()
 
@@ -97,6 +100,7 @@ def _openai_chat_completion(messages, max_tokens=500, temperature=0.7):
         messages=messages,
         max_tokens=max_tokens,
         temperature=temperature,
+        request_timeout=request_timeout,
     )
     return (response.choices[0].message.content or '').strip()
 from .models import (
@@ -877,44 +881,13 @@ def generate_quiz_questions(subject, topic, class_level, difficulty, questions_c
     # Принудительно русский язык
     language = 'russian'
 
-    # Для русского языка: сначала пробуем OpenAI, потом локальные шаблоны (гарантированно русский)
-    # Интернет НЕ используем для русского, т.к. он возвращает английские вопросы
-    
-    # Определение параметров углубленного поиска
-    options_count = 4  # Всегда 4 варианта
+    # Для русского языка используем быстрый и стабильный поток:
+    # OpenAI (если доступен) -> локальные шаблоны.
+    # Интернет-источники и построчный перевод отключены в этом режиме,
+    # чтобы избежать долгих внешних запросов и 500 из-за timeout.
+
     search_mode = "УГЛУБЛЕННЫЙ - ищи информацию из РАЗНЫХ источников, охватывая разные аспекты темы" if deep_search else "стандартный"
     detail_level = "подробные с фактами из разных источников" if deep_search else "краткие но информативные"
-    
-    # Сначала пробуем интернет-поиск (включая русский режим).
-    # Для русского при необходимости пробуем перевод через OpenAI.
-    internet_quiz = generate_quiz_from_internet(
-        subject=subject,
-        topic=topic,
-        difficulty=difficulty,
-        questions_count=questions_count,
-        deep_search=deep_search,
-    )
-    if internet_quiz:
-        questions = internet_quiz.get('questions', [])
-        is_russian = _quiz_is_russian(questions)
-
-        if language == 'russian':
-            if is_russian:
-                internet_quiz['generated_by'] = 'internet_ru'
-                return internet_quiz
-
-            translated_questions = _translate_questions_to_russian(questions)
-            if translated_questions:
-                internet_quiz['questions'] = translated_questions
-                internet_quiz['description'] = (
-                    f'Увлекательная викторина по теме "{topic or subject or "Общая тема"}" '
-                    'с вопросами на русском языке.'
-                )
-                internet_quiz['generated_by'] = 'internet_ru'
-                return internet_quiz
-
-            # Если перевод не сработал, НЕ возвращаем английский контент.
-            # Продолжаем fallback ниже (OpenAI/локальные русские шаблоны).
 
     # Попытка генерации через OpenAI API
     if _is_openai_enabled() and language == 'russian':
