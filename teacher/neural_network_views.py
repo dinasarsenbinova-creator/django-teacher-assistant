@@ -777,41 +777,51 @@ def generate_homework_local(subject, topic, class_level, difficulty, lesson_type
 def generate_quiz_helper(request):
     """Помощник в генерации викторины с помощью ИИ"""
     if request.method == 'POST':
-        payload = {}
-        if request.content_type and 'application/json' in request.content_type:
-            try:
-                payload = json.loads(request.body or '{}')
-            except json.JSONDecodeError:
-                payload = {}
-
-        source = payload if payload else request.POST
-        subject_name = source.get('subject', '')
-        topic_name = source.get('topic', '')
-        class_level = source.get('class_level', '')
-        difficulty = source.get('difficulty', 'medium')
-        # Принудительно используем русский язык для всего генератора
-        language = 'russian'
-        deep_search = source.get('deep_search', 'standard')
         try:
-            questions_count = int(source.get('questions_count', 5))
-        except (TypeError, ValueError):
-            questions_count = 5
+            payload = {}
+            if request.content_type and 'application/json' in request.content_type:
+                try:
+                    payload = json.loads(request.body or '{}')
+                except json.JSONDecodeError:
+                    payload = {}
 
-        # Генерация викторины на основе параметров
-        quiz_data = generate_quiz_questions(
-            subject=subject_name,
-            topic=topic_name,
-            class_level=class_level,
-            difficulty=difficulty,
-            questions_count=questions_count,
-            language=language,
-            deep_search=(deep_search == 'deep')
-        )
+            source = payload if payload else request.POST
+            subject_name = source.get('subject', '')
+            topic_name = source.get('topic', '')
+            class_level = source.get('class_level', '')
+            difficulty = source.get('difficulty', 'medium')
+            # Принудительно используем русский язык для всего генератора
+            language = 'russian'
+            deep_search = source.get('deep_search', 'standard')
+            try:
+                questions_count = int(source.get('questions_count', 5))
+            except (TypeError, ValueError):
+                questions_count = 5
 
-        return JsonResponse({
-            'success': True,
-            'quiz': quiz_data
-        })
+            # Генерация викторины на основе параметров
+            quiz_data = generate_quiz_questions(
+                subject=subject_name,
+                topic=topic_name,
+                class_level=class_level,
+                difficulty=difficulty,
+                questions_count=questions_count,
+                language=language,
+                deep_search=(deep_search == 'deep')
+            )
+
+            return JsonResponse({
+                'success': True,
+                'quiz': quiz_data
+            })
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Quiz generation error: {error_details}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+                'details': error_details if settings.DEBUG else 'Ошибка генерации викторины'
+            }, status=500)
 
     # Проверка доступности OpenAI
     openai_enabled = _is_openai_enabled()
