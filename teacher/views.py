@@ -405,10 +405,16 @@ def update_lesson_ajax(request, lesson_id):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@login_required
 @require_POST
 def create_group_ajax(request):
     """AJAX endpoint для создания группы студентов в реальном времени"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'Требуется авторизация',
+            'login_url': f"/accounts/login/?next={request.path}",
+        }, status=401)
+
     try:
         name = request.POST.get('name', '').strip()
         if not name:
@@ -432,10 +438,16 @@ def create_group_ajax(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@login_required
 @require_POST
 def create_topic_ajax(request):
     """AJAX endpoint для создания темы в реальном времени"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'Требуется авторизация',
+            'login_url': f"/accounts/login/?next={request.path}",
+        }, status=401)
+
     try:
         title = request.POST.get('title', '').strip()
         curriculum_id = request.POST.get('curriculum_id', None)
@@ -473,10 +485,16 @@ def create_topic_ajax(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@login_required
 @require_POST
 def create_subject_ajax(request):
     """AJAX endpoint для создания предмета в реальном времени"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'Требуется авторизация',
+            'login_url': f"/accounts/login/?next={request.path}",
+        }, status=401)
+
     try:
         name = request.POST.get('name', '').strip()
         

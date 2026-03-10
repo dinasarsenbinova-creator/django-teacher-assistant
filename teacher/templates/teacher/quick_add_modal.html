@@ -17,6 +17,23 @@
 </div>
 
 <script>
+async function parseQuickAddResponse(response) {
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('application/json')) {
+        const data = await response.json();
+        return { status: response.status, data, rawText: '' };
+    }
+    const rawText = await response.text();
+    return { status: response.status, data: null, rawText };
+}
+
+function quickAddHtmlError(status, rawText) {
+    const compact = (rawText || '').replace(/\s+/g, ' ').toLowerCase();
+    if (compact.includes('csrf')) return 'Ошибка CSRF. Обновите страницу и повторите.';
+    if (compact.includes('login') || compact.includes('sign in')) return 'Сессия истекла. Войдите снова.';
+    return `Сервер вернул не-JSON ответ (HTTP ${status})`;
+}
+
 function openQuickAddSubject() {
     document.getElementById('formType').value = 'subject';
     document.getElementById('modalTitle').textContent = 'Создать предмет';
@@ -71,8 +88,21 @@ document.getElementById('quickAddForm').addEventListener('submit', function(e) {
         },
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(parseQuickAddResponse)
+    .then(result => {
+        if (!result.data) {
+            document.getElementById('modalError').textContent = quickAddHtmlError(result.status, result.rawText);
+            document.getElementById('modalError').style.display = 'block';
+            return;
+        }
+
+        const data = result.data;
+
+        if (result.status === 401 || data.login_url) {
+            window.location.href = data.login_url || '/accounts/login/';
+            return;
+        }
+
         if (data.success) {
             // Добавляем новый элемент в селект (если возможно)
             const selectSelector = formType === 'subject'
