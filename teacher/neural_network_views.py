@@ -51,11 +51,39 @@ def _openai_chat_completion(messages, max_tokens=500, temperature=0.7):
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY не задан")
 
+    model_name = (os.getenv('OPENAI_MODEL', 'gpt-4o-mini') or 'gpt-4o-mini').strip()
+    web_search_enabled = (os.getenv('OPENAI_WEB_SEARCH', 'False').lower() == 'true')
+
     # Новый SDK (openai>=1.x)
     if hasattr(openai, 'OpenAI'):
         client = openai.OpenAI(api_key=api_key)
+
+        # Опционально: web search через Responses API
+        if web_search_enabled and hasattr(client, 'responses'):
+            try:
+                input_messages = []
+                for m in messages:
+                    role = m.get('role', 'user')
+                    content = m.get('content', '')
+                    input_messages.append({
+                        "role": role,
+                        "content": [{"type": "input_text", "text": content}],
+                    })
+
+                response = client.responses.create(
+                    model=model_name,
+                    input=input_messages,
+                    tools=[{"type": "web_search_preview"}],
+                )
+                output_text = getattr(response, 'output_text', '')
+                if output_text:
+                    return output_text.strip()
+            except Exception:
+                # Если web search недоступен для модели/аккаунта — fallback ниже.
+                pass
+
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=model_name,
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
