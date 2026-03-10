@@ -1,6 +1,6 @@
 Django>=4.2
-tensorflow>=2.12.0
-scikit-learn>=1.3.0
+# tensorflow>=2.12.0  # Отключено для бесплатного хостинга (слишком большой размер)
+# scikit-learn>=1.3.0  # Зависит от tensorflow
 numpy>=1.24.0
 openai>=0.28.0
 gunicorn>=21.2.0
