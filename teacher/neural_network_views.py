@@ -881,15 +881,45 @@ def generate_quiz_questions(subject, topic, class_level, difficulty, questions_c
     # Принудительно русский язык
     language = 'russian'
 
-    # Для русского языка используем быстрый и стабильный поток:
-    # OpenAI (если доступен) -> локальные шаблоны.
-    # Интернет-источники и построчный перевод отключены в этом режиме,
-    # чтобы избежать долгих внешних запросов и 500 из-за timeout.
+    # 1) Сначала пробуем интернет-источники по теме.
+    # Если русский текст получить не удалось — возвращаем веб-вопросы как есть,
+    # чтобы генерация по теме из интернета всегда работала.
+    internet_quiz = generate_quiz_from_internet(
+        subject=subject,
+        topic=topic,
+        difficulty=difficulty,
+        questions_count=questions_count,
+        deep_search=deep_search,
+    )
+    if internet_quiz and internet_quiz.get('questions'):
+        questions = internet_quiz.get('questions', [])
+
+        if language == 'russian':
+            if _quiz_is_russian(questions):
+                internet_quiz['generated_by'] = 'internet_ru'
+                return internet_quiz
+
+            # Пытаемся перевести на русский (предпочтительно через OpenAI).
+            translated_questions = _translate_questions_to_russian(questions)
+            if translated_questions:
+                internet_quiz['questions'] = translated_questions
+                internet_quiz['generated_by'] = 'internet_ru'
+                internet_quiz['description'] = (
+                    f'Викторина по теме "{topic or subject or "Общая тема"}" '
+                    'на основе интернет-источников (русская версия).'
+                )
+                return internet_quiz
+
+            internet_quiz['generated_by'] = 'internet'
+            internet_quiz['warning'] = 'Вопросы получены из интернета без перевода на русский.'
+            return internet_quiz
+
+        return internet_quiz
 
     search_mode = "УГЛУБЛЕННЫЙ - ищи информацию из РАЗНЫХ источников, охватывая разные аспекты темы" if deep_search else "стандартный"
     detail_level = "подробные с фактами из разных источников" if deep_search else "краткие но информативные"
 
-    # Попытка генерации через OpenAI API
+    # 2) Попытка генерации через OpenAI API
     if _is_openai_enabled() and language == 'russian':
         try:
             # Определение уровня сложности
@@ -958,7 +988,7 @@ def generate_quiz_questions(subject, topic, class_level, difficulty, questions_c
             print(f"OpenAI API error: {e}")
             # Fallback to local generation
     
-    # Для русского языка после всех попыток — локальные шаблоны (гарантированно русский)
+    # 3) Для русского языка после всех попыток — локальные шаблоны
     if language == 'russian':
         return generate_quiz_local(subject, topic, class_level, difficulty, questions_count)
 
