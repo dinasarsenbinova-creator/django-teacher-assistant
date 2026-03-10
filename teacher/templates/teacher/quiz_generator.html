@@ -194,6 +194,37 @@
 </style>
 
 <script>
+async function parseApiResponse(response) {
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+
+    if (contentType.includes('application/json')) {
+        const data = await response.json();
+        return { ok: response.ok, status: response.status, data, rawText: '' };
+    }
+
+    const rawText = await response.text();
+    return { ok: response.ok, status: response.status, data: null, rawText };
+}
+
+function htmlErrorToMessage(status, rawText) {
+    const compact = (rawText || '').replace(/\s+/g, ' ').trim();
+    if (!compact) {
+        return `Сервер вернул ошибку (HTTP ${status})`;
+    }
+
+    if (compact.toLowerCase().includes('csrf')) {
+        return 'Ошибка CSRF. Обновите страницу и повторите попытку.';
+    }
+    if (compact.toLowerCase().includes('login') || compact.toLowerCase().includes('sign in')) {
+        return 'Сессия истекла. Войдите снова и повторите попытку.';
+    }
+    if (compact.toLowerCase().includes('404')) {
+        return 'Маршрут генератора не найден (404).';
+    }
+
+    return `Сервер вернул не-JSON ответ (HTTP ${status}). Проверьте логи сервера.`;
+}
+
 document.getElementById('quizForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -213,9 +244,16 @@ document.getElementById('quizForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(parseApiResponse)
+    .then(result => {
         document.getElementById('loading').style.display = 'none';
+
+        if (!result.data) {
+            showError(htmlErrorToMessage(result.status, result.rawText));
+            return;
+        }
+
+        const data = result.data;
 
         if (data.success) {
             if (data.warning) {
@@ -343,8 +381,14 @@ document.getElementById('saveQuizBtn').addEventListener('click', function() {
         },
         body: 'quiz_data=' + encodeURIComponent(JSON.stringify(quizData))
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(parseApiResponse)
+    .then(result => {
+        if (!result.data) {
+            alert(htmlErrorToMessage(result.status, result.rawText));
+            return;
+        }
+
+        const data = result.data;
         if (data.success) {
             alert(data.message + '\n\nВикторина сохранена успешно!');
             window.location.href = '/teacher/quizzes/';
