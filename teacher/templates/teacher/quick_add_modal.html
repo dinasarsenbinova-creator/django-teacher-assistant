@@ -75,8 +75,10 @@ document.getElementById('quickAddForm').addEventListener('submit', function(e) {
     .then(data => {
         if (data.success) {
             // Добавляем новый элемент в селект (если возможно)
-            const selectName = formType === 'subject' ? 'subject' : 'class_name';
-            const selects = document.querySelectorAll(`select[name="${selectName}"]`);
+            const selectSelector = formType === 'subject'
+                ? 'select[name="subject"]'
+                : 'select[name="class_name"], select[name="student_group"]';
+            const selects = document.querySelectorAll(selectSelector);
             selects.forEach(select => {
                 const newOption = document.createElement('option');
                 newOption.value = data.id;

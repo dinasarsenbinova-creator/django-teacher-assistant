@@ -33,7 +33,12 @@
             <!-- Предмет -->
             <div class="form-group">
                 <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
-                {{ form.subject }}
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="flex: 1;">
+                        {{ form.subject }}
+                    </div>
+                    <button type="button" onclick="openQuickAddSubject()" class="btn" style="background:#3498db; margin:0;">+ Предмет</button>
+                </div>
                 {% if form.subject.errors %}
                     <small style="color: #e74c3c;">{{ form.subject.errors }}</small>
                 {% endif %}
@@ -42,7 +47,12 @@
             <!-- Группа студентов -->
             <div class="form-group">
                 <label for="{{ form.student_group.id_for_label }}">{{ form.student_group.label }}</label>
-                {{ form.student_group }}
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="flex: 1;">
+                        {{ form.student_group }}
+                    </div>
+                    <button type="button" onclick="openQuickAddGroup()" class="btn" style="background:#3498db; margin:0;">+ Группа</button>
+                </div>
                 {% if form.student_group.errors %}
                     <small style="color: #e74c3c;">{{ form.student_group.errors }}</small>
                 {% endif %}
@@ -129,4 +139,6 @@
         }
     </style>
 </div>
+
+{% include "teacher/quick_add_modal.html" %}
 {% endblock %}
