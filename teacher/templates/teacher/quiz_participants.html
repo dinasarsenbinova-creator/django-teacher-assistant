@@ -5,7 +5,8 @@
 {% block content %}
 <div class="header">
     <h1>👥 Участники: {{ quiz.title }}</h1>
-    <p>Всего участников: {{ participants_count }}, попыток: {{ attempts_count }}</p>
+    <p>Всего участников: <span id="participantsCount">{{ participants_count }}</span>, попыток: <span id="attemptsCount">{{ attempts_count }}</span></p>
+    <small style="color:#666;">Обновление в реальном времени каждые 5 секунд</small>
 </div>
 
 <div class="content">
@@ -25,7 +26,7 @@
                         <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Последняя попытка</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="participantsTableBody">
                     {% for p in participants %}
                         <tr>
                             <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.student_name }}</td>
@@ -54,9 +55,9 @@
                         <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Действие</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="attemptsTableBody">
                     {% for attempt in attempts %}
-                        <tr>
+                        <tr data-attempt-id="{{ attempt.id }}">
                             <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.student_name }}</td>
                             <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.score }}/{{ attempt.max_score }}</td>
                             <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.percentage|floatformat:1 }}%</td>
@@ -145,5 +146,68 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+function renderParticipantsRows(participants) {
+    const tbody = document.getElementById('participantsTableBody');
+    if (!tbody) return;
+
+    if (!participants || participants.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:0.8rem; color:#666;">Попыток пока нет.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = participants.map(p => `
+        <tr>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${p.student_name}</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${p.attempts_count}</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${p.best_score} балл(ов), ${p.best_percentage.toFixed(1)}%</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${p.last_attempt}</td>
+        </tr>
+    `).join('');
+}
+
+function renderAttemptsRows(attempts) {
+    const tbody = document.getElementById('attemptsTableBody');
+    if (!tbody) return;
+
+    if (!attempts || attempts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:0.8rem; color:#666;">Попыток пока нет.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = attempts.map(a => `
+        <tr data-attempt-id="${a.id}">
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${a.student_name}</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${a.score}/${a.max_score}</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${a.percentage.toFixed(1)}%</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">${a.completed_at}</td>
+            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">
+                <a href="/teacher/quiz-attempts/${a.id}/detail/" class="btn btn-primary" style="margin-right:0.5rem;">Ответы</a>
+                <button type="button" class="btn btn-danger" onclick='deleteAttempt(${a.id}, ${JSON.stringify(a.student_name)})'>Удалить</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function refreshAttemptsLive() {
+    try {
+        const response = await fetch('/teacher/api/quizzes/{{ quiz.id }}/participants/live/', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!data.success) return;
+
+        document.getElementById('participantsCount').textContent = data.participants_count;
+        document.getElementById('attemptsCount').textContent = data.attempts_count;
+        renderParticipantsRows(data.participants || []);
+        renderAttemptsRows(data.attempts || []);
+    } catch (e) {
+        console.warn('Live update failed', e);
+    }
+}
+
+setInterval(refreshAttemptsLive, 5000);
 </script>
 {% endblock %}

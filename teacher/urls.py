@@ -54,6 +54,7 @@ urlpatterns = [
     path("quizzes/<int:pk>/delete/", views.QuizDeleteView.as_view(), name="quiz_delete"),
     path("quizzes/<int:pk>/take/", views.take_quiz, name="quiz_take"),
     path("quizzes/<int:pk>/participants/", views.quiz_participants, name="quiz_participants"),
+    path("api/quizzes/<int:pk>/participants/live/", views.quiz_participants_live_data, name="quiz_participants_live_data"),
     path("quizzes/<int:pk>/student/", views.take_quiz_student, name="quiz_take_student"),
     path("quiz-attempts/<int:attempt_id>/result/", views.quiz_result, name="quiz_result"),
     path("quiz-attempts/<int:attempt_id>/detail/", views.quiz_attempt_detail, name="quiz_attempt_detail"),

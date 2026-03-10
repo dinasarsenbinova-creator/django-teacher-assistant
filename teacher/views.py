@@ -1196,6 +1196,20 @@ def create_quiz_from_ai(request):
 def quiz_participants(request, pk):
     """Список участников викторины и их результаты."""
     quiz = get_object_or_404(Quiz, pk=pk, teacher=request.user)
+    participants, attempts = _build_quiz_participants_data(quiz)
+
+    context = {
+        'quiz': quiz,
+        'attempts': attempts,
+        'participants': participants,
+        'participants_count': len(participants),
+        'attempts_count': attempts.count(),
+    }
+    return render(request, 'teacher/quiz_participants.html', context)
+
+
+def _build_quiz_participants_data(quiz):
+    """Собирает агрегированные данные по участникам и все попытки."""
     attempts = quiz.attempts.all().order_by('-completed_at')
 
     participants_map = {}
@@ -1206,14 +1220,14 @@ def quiz_participants(request, pk):
                 'student_name': name,
                 'attempts_count': 0,
                 'best_score': attempt.score,
-                'best_percentage': attempt.percentage,
+                'best_percentage': float(attempt.percentage),
                 'last_attempt': attempt.completed_at,
             }
 
         item = participants_map[name]
         item['attempts_count'] += 1
         if attempt.percentage > item['best_percentage']:
-            item['best_percentage'] = attempt.percentage
+            item['best_percentage'] = float(attempt.percentage)
             item['best_score'] = attempt.score
         if attempt.completed_at > item['last_attempt']:
             item['last_attempt'] = attempt.completed_at
@@ -1223,15 +1237,45 @@ def quiz_participants(request, pk):
         key=lambda x: x['last_attempt'],
         reverse=True,
     )
+    return participants, attempts
 
-    context = {
-        'quiz': quiz,
-        'attempts': attempts,
-        'participants': participants,
-        'participants_count': len(participants),
-        'attempts_count': attempts.count(),
-    }
-    return render(request, 'teacher/quiz_participants.html', context)
+
+@login_required
+def quiz_participants_live_data(request, pk):
+    """Live-данные по попыткам викторины для обновления страницы в реальном времени."""
+    quiz = get_object_or_404(Quiz, pk=pk, teacher=request.user)
+    participants, attempts = _build_quiz_participants_data(quiz)
+
+    participants_payload = [
+        {
+            'student_name': p['student_name'],
+            'attempts_count': p['attempts_count'],
+            'best_score': p['best_score'],
+            'best_percentage': round(float(p['best_percentage']), 1),
+            'last_attempt': p['last_attempt'].strftime('%d.%m.%Y %H:%M') if p['last_attempt'] else '',
+        }
+        for p in participants
+    ]
+
+    attempts_payload = [
+        {
+            'id': attempt.id,
+            'student_name': attempt.student_name,
+            'score': attempt.score,
+            'max_score': attempt.max_score,
+            'percentage': round(float(attempt.percentage), 1),
+            'completed_at': attempt.completed_at.strftime('%d.%m.%Y %H:%M') if attempt.completed_at else '',
+        }
+        for attempt in attempts
+    ]
+
+    return JsonResponse({
+        'success': True,
+        'participants_count': len(participants_payload),
+        'attempts_count': len(attempts_payload),
+        'participants': participants_payload,
+        'attempts': attempts_payload,
+    })
 
 
 @login_required
