@@ -1,0 +1,106 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Ответы студента{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>📄 Ответы: {{ attempt.student_name }}</h1>
+    <p>{{ quiz.title }} — {{ attempt.score }}/{{ attempt.max_score }} ({{ attempt.percentage|floatformat:1 }}%)</p>
+</div>
+
+<div class="content">
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <a href="{% url 'teacher:quiz_participants' quiz.id %}" class="btn">← К участникам</a>
+        <a href="{% url 'teacher:quiz_result' attempt.id %}" class="btn btn-secondary">Общий результат</a>
+        <button type="button" class="btn btn-danger" onclick="deleteAttempt({{ attempt.id }}, '{{ attempt.student_name }}')">Удалить результат</button>
+    </div>
+
+    <div class="card">
+        <h3>Проверка по вопросам</h3>
+        {% for item in question_results %}
+            <div style="border:1px solid #e5e7eb; border-radius:8px; padding:1rem; margin-top:1rem; background:#fafafa;">
+                <h4 style="margin-top:0;">Вопрос {{ forloop.counter }}: {{ item.question.question_text }}</h4>
+                <p><strong>Ответ студента:</strong> {{ item.user_answer }}</p>
+                <p><strong>Правильный ответ:</strong> {{ item.correct_answer }}</p>
+                <p>
+                    <strong>Статус:</strong>
+                    {% if item.is_correct %}
+                        <span style="color:#28a745; font-weight:700;">✓ Верно</span>
+                    {% elif item.has_answer %}
+                        <span style="color:#dc3545; font-weight:700;">✗ Ошибка</span>
+                    {% else %}
+                        <span style="color:#6c757d;">Не отвечено</span>
+                    {% endif %}
+                </p>
+                {% if item.question.explanation %}
+                    <p style="margin-bottom:0; color:#155724; background:#e8f5e8; padding:0.5rem; border-radius:4px;">
+                        <strong>💡 Пояснение:</strong> {{ item.question.explanation }}
+                    </p>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>Нет данных по ответам.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .btn-danger {
+        background-color: #ef4444;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s;
+    }
+    
+    .btn-danger:hover {
+        background-color: #dc2626;
+    }
+</style>
+
+<script>
+function deleteAttempt(attemptId, studentName) {
+    if (!confirm(`Вы уверены, что хотите удалить результат студента "${studentName}"?`)) {
+        return;
+    }
+    
+    fetch(`/teacher/quiz-attempts/${attemptId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Результат удален');
+            history.back();
+        } else {
+            alert('Ошибка при удалении: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при удалении результата');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

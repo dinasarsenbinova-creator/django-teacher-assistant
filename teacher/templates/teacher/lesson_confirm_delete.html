@@ -1,0 +1,65 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Удаление урока - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>⚠️ Удаление урока</h1>
+</div>
+
+<div class="content" style="max-width: 500px; margin: 0 auto;">
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="color: #856404; margin-top: 0;">Вы уверены?</h3>
+        <p style="color: #856404;">Вы собираетесь удалить урок <strong>"{{ object.title }}"</strong></p>
+
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+            <strong>Детали урока:</strong><br>
+            Дата: {{ object.date|date:"d.m.Y" }}<br>
+            {% if object.subject %}Предмет: {{ object.subject.name }}<br>{% endif %}
+            {% if object.class_name %}Группа: {{ object.class_name.name }}<br>{% endif %}
+            {% if object.topic %}Тема: {{ object.topic.title }}<br>{% endif %}
+        </div>
+
+        <ul style="color: #856404;">
+            <li>Урок будет полностью удален из системы</li>
+            <li>Связанные оценки и тесты останутся в системе</li>
+            <li>Это действие нельзя отменить</li>
+        </ul>
+    </div>
+
+    <form method="post" style="text-align: center;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Удалить урок</button>
+        <a href="{% url 'teacher:lesson_list' %}" class="btn" style="background-color: #95a5a6;">Отмена</a>
+    </form>
+</div>
+
+<style>
+    .btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        margin: 0.25rem;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .btn-danger {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+    }
+</style>
+{% endblock %}

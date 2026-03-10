@@ -1,0 +1,40 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Расписание - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>📅 Расписание занятий</h1>
+    <p>Управляйте своим еженедельным расписанием</p>
+    <a href="{% url 'teacher:schedule_create' %}" class="btn btn-success" style="margin-top: 1rem;">+ Добавить занятие</a>
+</div>
+
+<div class="content">
+    {% if schedules %}
+        <table>
+            <thead>
+                <tr>
+                    <th>День недели</th>
+                    <th>Время</th>
+                    <th>Предмет</th>
+                    <th>Класс</th>
+                    <th>Кабинет</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in schedules %}
+                    <tr>
+                        <td><strong>{{ schedule.get_day_of_week_display }}</strong></td>
+                        <td>{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}</td>
+                        <td>{{ schedule.subject }}</td>
+                        <td>{{ schedule.class_name }}</td>
+                        <td>{{ schedule.room|default:"—" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #999; text-align: center; padding: 2rem;">Расписание не добавлено</p>
+    {% endif %}
+</div>
+{% endblock %}

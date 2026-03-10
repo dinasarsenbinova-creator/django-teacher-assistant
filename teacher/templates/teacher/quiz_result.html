@@ -1,0 +1,36 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Результат викторины{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>✅ Результат: {{ quiz.title }}</h1>
+</div>
+
+<div class="content">
+    <div class="card">
+        <p><strong>Студент:</strong> {{ attempt.student_name }}</p>
+        <p><strong>Баллы:</strong> {{ attempt.score }} / {{ attempt.max_score }}</p>
+        <p><strong>Процент:</strong> {{ attempt.percentage|floatformat:1 }}%</p>
+
+        {% if is_passed %}
+            <div style="padding:0.75rem; border-radius:6px; background:#e8f5e9; color:#1b5e20; margin: 1rem 0;">
+                Викторина пройдена успешно.
+            </div>
+        {% else %}
+            <div style="padding:0.75rem; border-radius:6px; background:#ffebee; color:#b71c1c; margin: 1rem 0;">
+                Порог не пройден. Попробуйте ещё раз.
+            </div>
+        {% endif %}
+
+        <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+            {% if is_public %}
+                <a class="btn btn-primary" href="{% url 'teacher:quiz_take_student' quiz.id %}">Пройти снова</a>
+            {% else %}
+                <a class="btn btn-secondary" href="{% url 'teacher:quiz_detail' quiz.id %}">К викторине</a>
+                <a class="btn btn-primary" href="{% url 'teacher:quiz_take' quiz.id %}">Пройти снова</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

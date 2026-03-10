@@ -1,0 +1,252 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Генератор домашних заданий - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🤖 Генератор домашних заданий</h1>
+    <p>ИИ-помощник поможет создать подходящее домашнее задание для вашего урока</p>
+    {% if openai_enabled %}
+        <div style="background: #d4edda; color: #155724; padding: 0.75rem; border-radius: 4px; border: 1px solid #c3e6cb; margin-top: 1rem;">
+            <strong>🌐 OpenAI включен:</strong> Генерация заданий использует ИИ из интернета для более качественных результатов
+        </div>
+    {% else %}
+        <div style="background: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 4px; border: 1px solid #ffeaa7; margin-top: 1rem;">
+            <strong>💻 Локальная генерация:</strong> Используются встроенные шаблоны. Для использования ИИ из интернета установите OpenAI API ключ
+        </div>
+    {% endif %}
+</div>
+
+<div class="content">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <!-- Форма генерации -->
+        <div class="card">
+            <h3>⚙️ Параметры задания</h3>
+
+            <form id="homeworkForm">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="subject">Предмет <span style="color: #e74c3c;">*</span></label>
+                    <select id="subject" name="subject" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Выберите предмет</option>
+                        <option value="Математика">Математика</option>
+                        <option value="Алгебра">Алгебра</option>
+                        <option value="Геометрия">Геометрия</option>
+                        <option value="Физика">Физика</option>
+                        <option value="Химия">Химия</option>
+                        <option value="Биология">Биология</option>
+                        <option value="История">История</option>
+                        <option value="Литература">Литература</option>
+                        <option value="Русский язык">Русский язык</option>
+                        <option value="Английский язык">Английский язык</option>
+                        <option value="Информатика">Информатика</option>
+                        <option value="География">География</option>
+                        <option value="Обществознание">Обществознание</option>
+                        <option value="Другой">Другой предмет</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="topic">Тема урока <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="topic" name="topic" placeholder="Например: Квадратные уравнения" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
+                <div class="form-group">
+                    <label for="class_level">Класс</label>
+                    <select id="class_level" name="class_level" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Не указывать</option>
+                        <option value="5">5 класс</option>
+                        <option value="6">6 класс</option>
+                        <option value="7">7 класс</option>
+                        <option value="8">8 класс</option>
+                        <option value="9">9 класс</option>
+                        <option value="10">10 класс</option>
+                        <option value="11">11 класс</option>
+                        <option value="Колледж">Колледж</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="lesson_type">Тип урока</label>
+                    <select id="lesson_type" name="lesson_type" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="theory">Теоретический</option>
+                        <option value="practice">Практический</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="difficulty">Сложность</label>
+                    <select id="difficulty" name="difficulty" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="easy">Легкая</option>
+                        <option value="medium">Средняя</option>
+                        <option value="hard">Сложная</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1rem;">
+                    🚀 Сгенерировать задание
+                </button>
+            </form>
+        </div>
+
+        <!-- Результат -->
+        <div class="card">
+            <h3>📝 Сгенерированное задание</h3>
+
+            <div id="result" style="display: none;">
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #27ae60;">
+                    <h4 style="margin-top: 0; color: #27ae60;">✨ Домашнее задание</h4>
+                    <div id="homeworkText" style="white-space: pre-line; line-height: 1.6;"></div>
+                </div>
+
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button id="regenerateBtn" class="btn" style="background-color: #f39c12; color: white;">
+                        🔄 Сгенерировать другое
+                    </button>
+                    <button id="copyBtn" class="btn" style="background-color: #3498db;">
+                        📋 Копировать
+                    </button>
+                </div>
+            </div>
+
+            <div id="loading" style="display: none; text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 1rem;">🤖</div>
+                <p>Генерирую задание...</p>
+                <div style="width: 100%; height: 4px; background: #eee; border-radius: 2px; overflow: hidden;">
+                    <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #3498db, #27ae60); animation: loading 2s infinite;"></div>
+                </div>
+            </div>
+
+            <div id="placeholder" style="text-align: center; padding: 3rem; color: #999;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+                <p>Заполните параметры и нажмите "Сгенерировать задание"</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        background-color: #27ae60;
+        color: white;
+    }
+
+    @keyframes loading {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+</style>
+
+<script>
+document.getElementById('homeworkForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const resultDiv = document.getElementById('result');
+    const loadingDiv = document.getElementById('loading');
+    const placeholderDiv = document.getElementById('placeholder');
+
+    // Показать загрузку
+    resultDiv.style.display = 'none';
+    loadingDiv.style.display = 'block';
+    placeholderDiv.style.display = 'none';
+
+    fetch('/teacher/homework-generator/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingDiv.style.display = 'none';
+
+        if (data.success) {
+            document.getElementById('homeworkText').textContent = data.homework;
+            resultDiv.style.display = 'block';
+        } else {
+            alert('Ошибка при генерации задания: ' + (data.error || 'Неизвестная ошибка'));
+            placeholderDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        loadingDiv.style.display = 'none';
+        placeholderDiv.style.display = 'block';
+        alert('Ошибка сети: ' + error.message);
+    });
+});
+
+document.getElementById('regenerateBtn').addEventListener('click', function() {
+    document.getElementById('homeworkForm').dispatchEvent(new Event('submit'));
+});
+
+document.getElementById('copyBtn').addEventListener('click', function() {
+    const text = document.getElementById('homeworkText').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        const btn = document.getElementById('copyBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Скопировано!';
+        btn.style.backgroundColor = '#27ae60';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.backgroundColor = '#3498db';
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

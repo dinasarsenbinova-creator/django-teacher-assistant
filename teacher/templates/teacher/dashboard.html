@@ -1,0 +1,146 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Панель управления - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>👋 Добро пожаловать в Ассистент педагога</h1>
+    <p>Управляйте своей профессиональной деятельностью легко и эффективно</p>
+</div>
+
+<div class="stats">
+    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <h4>Предстоящие уроки</h4>
+        <div class="number">{{ upcoming_lessons.count }}</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <h4>Сегодня расписание</h4>
+        <div class="number">{{ today_schedule.count }}</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <h4>Активные рабочие программы</h4>
+        <div class="number">{{ curricula.count }}</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+        <h4>Свежие оценки</h4>
+        <div class="number">{{ recent_grades.count }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div>
+        <div class="card">
+            <h3>📅 Предстоящие уроки</h3>
+            {% if upcoming_lessons %}
+                <table>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тема</th>
+                        <th>Класс</th>
+                    </tr>
+                    {% for lesson in upcoming_lessons %}
+                        <tr>
+                            <td>{{ lesson.date|date:"d.m.Y" }}</td>
+                            <td><a href="{% url 'teacher:lesson_detail' lesson.pk %}" style="color: #3498db; text-decoration: none;">{{ lesson.title }}</a></td>
+                            <td>{{ lesson.class_name }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">Нет предстоящих уроков</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p style="color: #999;">Запланируйте первый урок</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3>⏰ Расписание на сегодня</h3>
+            {% if today_schedule %}
+                <table>
+                    <tr>
+                        <th>Время</th>
+                        <th>Предмет</th>
+                        <th>Класс</th>
+                    </tr>
+                    {% for schedule in today_schedule %}
+                        <tr>
+                            <td>{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}</td>
+                            <td>{{ schedule.subject }}</td>
+                            <td>{{ schedule.class_name }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">Нет занятий на сегодня</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p style="color: #999;">Добавьте расписание занятий</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+    <div>
+        <div class="card">
+            <h3>📚 Рабочие программы</h3>
+            {% if curricula %}
+                <ul style="list-style: none;">
+                    {% for curriculum in curricula %}
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #ecf0f1;">
+                            <a href="{% url 'teacher:curriculum_detail' curriculum.pk %}" style="color: #3498db; text-decoration: none;">
+                                {{ curriculum.title }}
+                            </a>
+                            <small style="color: #999;"> ({{ curriculum.class_level }}, {{ curriculum.year }})</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="color: #999;">Создайте первую рабочую программу</p>
+            {% endif %}
+            <a href="{% url 'teacher:curriculum_list' %}" class="btn" style="margin-top: 1rem; display: inline-block;">Просмотреть все</a>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3>📋 Последние тесты</h3>
+            {% if recent_tests %}
+                <ul style="list-style: none;">
+                    {% for test in recent_tests %}
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #ecf0f1;">
+                            <a href="{% url 'teacher:test_detail' test.pk %}" style="color: #3498db; text-decoration: none;">
+                                {{ test.title }}
+                            </a>
+                            <small style="color: #999;"> ({{ test.get_test_type_display }})</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="color: #999;">Создайте первый тест</p>
+            {% endif %}
+            <a href="{% url 'teacher:test_list' %}" class="btn" style="margin-top: 1rem; display: inline-block;">Просмотреть все</a>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <div class="card">
+        <h3>🚀 Быстрые действия</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <a href="{% url 'teacher:lesson_create' %}" class="btn btn-success">Добавить урок</a>
+            <a href="{% url 'teacher:grade_create' %}" class="btn btn-success">Добавить оценку</a>
+            <a href="{% url 'teacher:test_create' %}" class="btn btn-success">Создать тест</a>
+            <a href="{% url 'teacher:curriculum_create' %}" class="btn btn-success">Новая программа</a>
+            <a href="{% url 'teacher:schedule_create' %}" class="btn btn-success">Добавить в расписание</a>
+            <a href="{% url 'teacher:homework_generator' %}" class="btn" style="background-color: #9b59b6; color: white;">🤖 Генератор ДЗ</a>
+            <a href="{% url 'teacher:quiz_generator' %}" class="btn" style="background-color: #e67e22; color: white;">🎯 Генератор викторин</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

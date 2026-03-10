@@ -1,0 +1,498 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Форма урока - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>{% if form.instance.pk %}✏️ Редактирование урока{% else %}➕ Новый урок{% endif %}</h1>
+</div>
+
+<div class="content">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="message error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                    {{ field }}
+                    {% if field.name == 'topic' %}
+                        <button type="button" class="btn btn-sm" style="background-color: #27ae60; padding: 0.6rem 1rem; white-space: nowrap; margin-top: 0.25rem;" onclick="openTopicModal()">
+                            ➕ Новая тема
+                        </button>
+                    {% elif field.name == 'subject' %}
+                        <button type="button" class="btn btn-sm" style="background-color: #3498db; padding: 0.6rem 1rem; white-space: nowrap; margin-top: 0.25rem;" onclick="openSubjectModal()">
+                            ➕ Новый предмет
+                        </button>
+                    {% elif field.name == 'homework' %}
+                        <button type="button" class="btn btn-sm" style="background-color: #9b59b6; color: white; padding: 0.6rem 1rem; white-space: nowrap; margin-top: 0.25rem;" onclick="openHomeworkGenerator()">
+                            🤖 Генерировать ДЗ
+                        </button>
+                    {% endif %}
+                </div>
+                {% if field.errors %}
+                    <small style="color: #e74c3c;">{{ field.errors }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-success">Сохранить</button>
+            <a href="{% url 'teacher:lesson_list' %}" class="btn" style="background-color: #95a5a6;">Отмена</a>
+        </div>
+    </form>
+</div>
+
+<!-- Модальное окно для быстрого создания темы -->
+<div id="topicModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div class="modal-content" style="background: white; margin: 50px auto; padding: 2rem; border-radius: 8px; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <h2 style="margin-top: 0;">➕ Создать новую тему</h2>
+        
+        <div class="form-group">
+            <label for="topicTitle"><strong>Название темы *</strong></label>
+            <input type="text" id="topicTitle" placeholder="Введите название темы" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+            <small style="color: #999;">Название темы для программы</small>
+        </div>
+
+        <div class="form-group">
+            <label for="topicHours"><strong>Количество часов</strong></label>
+            <input type="number" id="topicHours" value="1" min="1" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+        </div>
+
+        <div class="form-group">
+            <label for="topicDescription"><strong>Описание</strong></label>
+            <textarea id="topicDescription" placeholder="Описание темы (необязательно)" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; min-height: 80px; resize: vertical;"></textarea>
+        </div>
+
+        <div id="topicError" style="color: #e74c3c; margin: 1rem 0; display: none;"></div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-success" style="flex: 1;" onclick="createTopic()">✅ Создать тему</button>
+            <button type="button" class="btn" style="flex: 1; background-color: #95a5a6;" onclick="closeTopicModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для быстрого создания предмета -->
+<div id="subjectModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div class="modal-content" style="background: white; margin: 50px auto; padding: 2rem; border-radius: 8px; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <h2 style="margin-top: 0;">➕ Создать новый предмет</h2>
+        
+        <div class="form-group">
+            <label for="subjectName"><strong>Название предмета *</strong></label>
+            <input type="text" id="subjectName" placeholder="Введите название предмета" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+            <small style="color: #999;">Название учебного предмета</small>
+        </div>
+
+        <div class="form-group">
+            <label for="subjectDescription"><strong>Описание</strong></label>
+            <textarea id="subjectDescription" placeholder="Описание предмета (необязательно)" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; min-height: 80px; resize: vertical;"></textarea>
+        </div>
+
+        <div id="subjectError" style="color: #e74c3c; margin: 1rem 0; display: none;"></div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-success" style="flex: 1;" onclick="createSubject()">✅ Создать предмет</button>
+            <button type="button" class="btn" style="flex: 1; background-color: #95a5a6;" onclick="closeSubjectModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group input[type="number"]:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #27ae60;
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-success {
+        background-color: #27ae60;
+    }
+
+    .btn-success:hover {
+        background-color: #229954;
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+</style>
+
+<script>
+function openTopicModal() {
+    document.getElementById('topicModal').style.display = 'block';
+    document.getElementById('topicTitle').focus();
+}
+
+function closeTopicModal() {
+    document.getElementById('topicModal').style.display = 'none';
+    document.getElementById('topicTitle').value = '';
+    document.getElementById('topicHours').value = '1';
+    document.getElementById('topicDescription').value = '';
+    document.getElementById('topicError').style.display = 'none';
+}
+
+function createTopic() {
+    const title = document.getElementById('topicTitle').value.trim();
+    const hours = document.getElementById('topicHours').value;
+    const description = document.getElementById('topicDescription').value;
+    const errorDiv = document.getElementById('topicError');
+
+    if (!title) {
+        errorDiv.textContent = 'Пожалуйста, введите название темы';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const curriculumId = document.querySelector('select[name="curriculum"]')?.value || 
+                        document.querySelector('input[name="curriculum"]')?.value;
+
+    if (!curriculumId) {
+        errorDiv.textContent = 'Пожалуйста, сначала выберите программу';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('hours', hours);
+    formData.append('description', description);
+    formData.append('curriculum_id', curriculumId);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name="csrfmiddlewaretoken"]').value);
+
+    fetch('/teacher/api/topic/create/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновить dropdown выбора темы
+            const topicSelect = document.querySelector('select[name="topic"]');
+            if (topicSelect) {
+                const newOption = document.createElement('option');
+                newOption.value = data.id;
+                newOption.textContent = data.title;
+                newOption.selected = true;
+                topicSelect.appendChild(newOption);
+            }
+            closeTopicModal();
+            alert('✅ Тема успешно создана!');
+        } else {
+            errorDiv.textContent = data.error || 'Ошибка при создании темы';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Ошибка сети: ' + error;
+        errorDiv.style.display = 'block';
+    });
+}
+
+// Закрыть модаль при клике на фон
+document.getElementById('topicModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeTopicModal();
+    }
+});
+
+// Создать тему при нажатии Enter
+document.getElementById('topicTitle')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        createTopic();
+    }
+});
+
+// Функции для модального окна предмета
+function openSubjectModal() {
+    document.getElementById('subjectModal').style.display = 'block';
+    document.getElementById('subjectName').focus();
+}
+
+function closeSubjectModal() {
+    document.getElementById('subjectModal').style.display = 'none';
+    document.getElementById('subjectName').value = '';
+    document.getElementById('subjectDescription').value = '';
+    document.getElementById('subjectError').style.display = 'none';
+}
+
+function createSubject() {
+    const name = document.getElementById('subjectName').value.trim();
+    const description = document.getElementById('subjectDescription').value;
+    const errorDiv = document.getElementById('subjectError');
+
+    errorDiv.style.display = 'none';
+
+    if (!name) {
+        errorDiv.textContent = 'Название предмета не может быть пусто';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('description', description);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name="csrfmiddlewaretoken"]').value);
+
+    fetch('/teacher/api/subject/create/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновить dropdown выбора предмета
+            const subjectSelect = document.querySelector('select[name="subject"]');
+            if (subjectSelect) {
+                const newOption = document.createElement('option');
+                newOption.value = data.id;
+                newOption.textContent = data.name;
+                newOption.selected = true;
+                subjectSelect.appendChild(newOption);
+            }
+            closeSubjectModal();
+            alert('✅ Предмет успешно создан!');
+        } else {
+            errorDiv.textContent = data.error || 'Ошибка при создании предмета';
+            errorDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        errorDiv.textContent = 'Ошибка сети: ' + error;
+        errorDiv.style.display = 'block';
+    });
+}
+
+// Закрыть модаль предмета при клике на фон
+document.getElementById('subjectModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeSubjectModal();
+    }
+});
+
+// Создать предмет при нажатии Enter
+document.getElementById('subjectName')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        createSubject();
+    }
+});
+
+// Функции для генератора домашних заданий
+function openHomeworkGenerator() {
+    // Получить текущие значения из формы
+    const subjectSelect = document.querySelector('select[name="subject"]');
+    const topicSelect = document.querySelector('select[name="topic"]');
+
+    if (subjectSelect && subjectSelect.value) {
+        document.getElementById('hwSubject').value = subjectSelect.options[subjectSelect.selectedIndex].text;
+    }
+    if (topicSelect && topicSelect.value) {
+        const topicOption = topicSelect.options[topicSelect.selectedIndex];
+        if (topicOption && topicOption.text !== '---------') {
+            document.getElementById('hwTopic').value = topicOption.text;
+        }
+    }
+
+    document.getElementById('homeworkModal').style.display = 'block';
+}
+
+function closeHomeworkModal() {
+    document.getElementById('homeworkModal').style.display = 'none';
+    document.getElementById('hwResult').style.display = 'none';
+    document.getElementById('hwLoading').style.display = 'none';
+    document.getElementById('hwPlaceholder').style.display = 'block';
+}
+
+function generateHomework() {
+    const subject = document.getElementById('hwSubject').value.trim();
+    const topic = document.getElementById('hwTopic').value.trim();
+    const classLevel = document.getElementById('hwClassLevel').value;
+    const lessonType = document.getElementById('hwLessonType').value;
+    const difficulty = document.getElementById('hwDifficulty').value;
+
+    if (!subject || !topic) {
+        alert('Пожалуйста, заполните предмет и тему');
+        return;
+    }
+
+    const resultDiv = document.getElementById('hwResult');
+    const loadingDiv = document.getElementById('hwLoading');
+    const placeholderDiv = document.getElementById('hwPlaceholder');
+
+    // Показать загрузку
+    resultDiv.style.display = 'none';
+    loadingDiv.style.display = 'block';
+    placeholderDiv.style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('subject', subject);
+    formData.append('topic', topic);
+    formData.append('class_level', classLevel);
+    formData.append('lesson_type', lessonType);
+    formData.append('difficulty', difficulty);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name="csrfmiddlewaretoken"]').value);
+
+    fetch('/teacher/homework-generator/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingDiv.style.display = 'none';
+
+        if (data.success) {
+            document.getElementById('hwText').textContent = data.homework;
+            resultDiv.style.display = 'block';
+        } else {
+            alert('Ошибка при генерации задания: ' + (data.error || 'Неизвестная ошибка'));
+            placeholderDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        loadingDiv.style.display = 'none';
+        placeholderDiv.style.display = 'block';
+        alert('Ошибка сети: ' + error.message);
+    });
+}
+
+function useHomework() {
+    const homeworkText = document.getElementById('hwText').textContent;
+    const homeworkTextarea = document.querySelector('textarea[name="homework"]');
+    if (homeworkTextarea) {
+        homeworkTextarea.value = homeworkText;
+    }
+    closeHomeworkModal();
+}
+</script>
+
+<!-- Модальное окно для генератора домашних заданий -->
+<div id="homeworkModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div class="modal-content" style="background: white; margin: 50px auto; padding: 2rem; border-radius: 8px; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;">
+        <h2 style="margin-top: 0;">🤖 Генератор домашних заданий</h2>
+
+        <div class="form-group">
+            <label for="hwSubject">Предмет *</label>
+            <input type="text" id="hwSubject" placeholder="Например: Математика" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+
+        <div class="form-group">
+            <label for="hwTopic">Тема урока *</label>
+            <input type="text" id="hwTopic" placeholder="Например: Квадратные уравнения" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="hwClassLevel">Класс</label>
+                <select id="hwClassLevel" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Не указывать</option>
+                    <option value="5">5 класс</option>
+                    <option value="6">6 класс</option>
+                    <option value="7">7 класс</option>
+                    <option value="8">8 класс</option>
+                    <option value="9">9 класс</option>
+                    <option value="10">10 класс</option>
+                    <option value="11">11 класс</option>
+                    <option value="Колледж">Колледж</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="hwLessonType">Тип урока</label>
+                <select id="hwLessonType" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="theory">Теоретический</option>
+                    <option value="practice">Практический</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="hwDifficulty">Сложность</label>
+                <select id="hwDifficulty" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="easy">Легкая</option>
+                    <option value="medium">Средняя</option>
+                    <option value="hard">Сложная</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-success" style="width: 100%; margin: 1rem 0;" onclick="generateHomework()">
+            🚀 Сгенерировать задание
+        </button>
+
+        <div id="hwResult" style="display: none;">
+            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #27ae60;">
+                <h4 style="margin-top: 0; color: #27ae60;">✨ Сгенерированное задание</h4>
+                <div id="hwText" style="white-space: pre-line; line-height: 1.6;"></div>
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                <button type="button" class="btn btn-success" style="flex: 1;" onclick="useHomework()">✅ Использовать</button>
+                <button type="button" class="btn" style="flex: 1; background-color: #f39c12;" onclick="generateHomework()">🔄 Сгенерировать другое</button>
+            </div>
+        </div>
+
+        <div id="hwLoading" style="display: none; text-align: center; padding: 2rem;">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">🤖</div>
+            <p>Генерирую задание...</p>
+            <div style="width: 100%; height: 4px; background: #eee; border-radius: 2px; overflow: hidden;">
+                <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #3498db, #27ae60); animation: loading 2s infinite;"></div>
+            </div>
+        </div>
+
+        <div id="hwPlaceholder" style="text-align: center; padding: 2rem; color: #999;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+            <p>Нажмите "Сгенерировать задание" для создания домашнего задания</p>
+        </div>
+
+        <div style="text-align: right; margin-top: 2rem;">
+            <button type="button" class="btn" style="background-color: #95a5a6;" onclick="closeHomeworkModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes loading {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+</style>
+{% endblock %}

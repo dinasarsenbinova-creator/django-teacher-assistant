@@ -1,0 +1,304 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Анализ студента{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ student_name }}</h1>
+            <p class="text-muted">Курс: <strong>{{ curriculum.title }}</strong></p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'teacher:nn_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Общая статистика -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Общие показатели</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-8">Средняя оценка:</dt>
+                        <dd class="col-sm-4">
+                            <h5 class="text-primary">
+                                {{ performance_summary.average_grade|floatformat:2 }}
+                            </h5>
+                        </dd>
+
+                        <dt class="col-sm-8">Тестирование:</dt>
+                        <dd class="col-sm-4">
+                            <h5>{{ performance_summary.average_test_score|floatformat:1 }}%</h5>
+                        </dd>
+
+                        <dt class="col-sm-8">Оценок:</dt>
+                        <dd class="col-sm-4">
+                            <h5>{{ performance_summary.total_assessments }}</h5>
+                        </dd>
+
+                        <dt class="col-sm-8">Статус:</dt>
+                        <dd class="col-sm-4">
+                            {% if performance_summary.recent_performance == 'good' %}
+                                <span class="badge badge-success">Хорошо</span>
+                            {% elif performance_summary.recent_performance == 'satisfactory' %}
+                                <span class="badge badge-warning">Удовл.</span>
+                            {% else %}
+                                <span class="badge badge-danger">Слабо</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Тренд успеваемости</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>Тренд:</strong>
+                        {% if trend_analysis.trend == 'improving' %}
+                            <span class="badge badge-success">📈 Улучшение</span>
+                        {% elif trend_analysis.trend == 'declining' %}
+                            <span class="badge badge-danger">📉 Снижение</span>
+                        {% else %}
+                            <span class="badge badge-info">➡️ Стабильно</span>
+                        {% endif %}
+                    </p>
+                    <dl class="row small">
+                        <dt class="col-sm-8">Изменение:</dt>
+                        <dd class="col-sm-4">{{ trend_analysis.change|floatformat:2 }}</dd>
+
+                        <dt class="col-sm-8">Недавно:</dt>
+                        <dd class="col-sm-4">{{ trend_analysis.recent_average|floatformat:2 }}</dd>
+
+                        <dt class="col-sm-8">Ранее:</dt>
+                        <dd class="col-sm-4">{{ trend_analysis.earlier_average|floatformat:2 }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Данные студента -->
+        <div class="col-md-8 mb-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Данные студента</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border-right">
+                                <h6 class="text-muted">История оценок</h6>
+                                <h4>{{ student_data.total_grades }}</h4>
+                                {% if student_data.grades %}
+                                    <small class="text-muted">
+                                        От {{ student_data.lowest_grade|default:"-" }} до {{ student_data.highest_grade|default:"-" }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border-right">
+                                <h6 class="text-muted">Посещаемость</h6>
+                                <h4>{{ student_data.attendance|floatformat:0 }}%</h4>
+                                <small class="text-muted">На основе контрольных</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <h6 class="text-muted">Домашние задания</h6>
+                                <h4>{{ student_data.homework_done }}/{{ student_data.homework_total }}</h4>
+                                <small class="text-muted">Выполнено</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- История оценок -->
+            {% if student_data.grades %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">История оценок (последние 10)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for grade in student_data.grades|slice:"-10:" %}
+                                <span class="badge badge-lg" style="
+                                    {% if grade >= 4 %}
+                                        background-color: #28a745;
+                                    {% elif grade >= 3 %}
+                                        background-color: #ffc107;
+                                    {% else %}
+                                        background-color: #dc3545;
+                                    {% endif %}
+                                    padding: 8px 12px; font-size: 14px;
+                                ">
+                                    {{ grade }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Предсказания -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Предсказания нейросети</h5>
+        </div>
+        <div class="card-body">
+            {% if predictions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Предсказана оценка</th>
+                                <th>Уверенность</th>
+                                <th>Модель</th>
+                                <th>Фактическая оценка</th>
+                                <th>Точность</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pred in predictions %}
+                                <tr>
+                                    <td>{{ pred.prediction_date|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <strong class="text-primary">{{ pred.predicted_grade|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">{{ pred.confidence|floatformat:0 }}%</span>
+                                    </td>
+                                    <td>{{ pred.nn_model.name|truncatewords:5 }}</td>
+                                    <td>
+                                        {% if pred.actual_grade %}
+                                            <strong>{{ pred.actual_grade }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Не заполнена</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if pred.is_accurate %}
+                                            <span class="badge badge-success">✓ Точно</span>
+                                        {% elif pred.is_accurate is None %}
+                                            <span class="badge badge-warning">? Не проверено</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">✗ Неточно</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if pred.actual_grade is None %}
+                                            <button class="btn btn-sm btn-primary confirm-grade-btn" 
+                                                    data-prediction-id="{{ pred.id }}"
+                                                    onclick="confirmGrade({{ pred.id }})">
+                                                Подтвердить оценку
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center">Нет предсказаний для этого студента</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для подтверждения оценки -->
+<div class="modal fade" id="confirmGradeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтвердить фактическую оценку</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="confirmGradeForm">
+                    <div class="form-group">
+                        <label>Фактическая оценка (1-5):</label>
+                        <select class="form-control" id="actualGrade" required>
+                            <option value="">Выберите оценку</option>
+                            <option value="1">1 - Неудовлетворительно</option>
+                            <option value="2">2 - Плохо</option>
+                            <option value="3">3 - Удовлетворительно</option>
+                            <option value="4">4 - Хорошо</option>
+                            <option value="5">5 - Отлично</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitConfirmGrade()">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPredictionId = null;
+
+function confirmGrade(predictionId) {
+    currentPredictionId = predictionId;
+    document.getElementById('confirmGradeForm').reset();
+    $('#confirmGradeModal').modal('show');
+}
+
+function submitConfirmGrade() {
+    const actualGrade = document.getElementById('actualGrade').value;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    if (!actualGrade) {
+        alert('Пожалуйста, выберите оценку');
+        return;
+    }
+    
+    fetch('/teacher/confirm-grade/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            prediction_id: currentPredictionId,
+            actual_grade: parseInt(actualGrade)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    });
+}
+</script>
+
+<style>
+    .badge-lg {
+        font-size: 16px !important;
+        color: white !important;
+        padding: 10px 15px !important;
+    }
+</style>
+{% endblock %}

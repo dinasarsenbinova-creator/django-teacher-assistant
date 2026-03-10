@@ -1,0 +1,45 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Форма теста - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>{% if form.instance.pk %}✏️ Редактирование теста{% else %}➕ Новый тест{% endif %}</h1>
+</div>
+
+<div class="content">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="message error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div class="form-group">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="{{ field.id_for_label }}" style="flex: 1;">{{ field.label }}</label>
+                    {% if field.name == 'subject' %}
+                        <button type="button" class="btn" style="background:#27ae60; color:white; padding:0.3rem 0.6rem; font-size:0.85rem; border:none; border-radius:3px; cursor:pointer;" onclick="openQuickAddSubject()">+ Добавить предмет</button>
+                    {% elif field.name == 'class_name' %}
+                        <button type="button" class="btn" style="background:#27ae60; color:white; padding:0.3rem 0.6rem; font-size:0.85rem; border:none; border-radius:3px; cursor:pointer;" onclick="openQuickAddGroup()">+ Добавить группу</button>
+                    {% endif %}
+                </div>
+                {{ field }}
+                {% if field.errors %}
+                    <small style="color: #e74c3c;">{{ field.errors }}</small>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-success">Сохранить</button>
+            <a href="{% url 'teacher:test_list' %}" class="btn" style="background-color: #95a5a6;">Отмена</a>
+        </div>
+    </form>
+</div>
+
+{% include "teacher/quick_add_modal.html" %}
+{% endblock %}

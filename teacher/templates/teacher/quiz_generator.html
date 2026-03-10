@@ -1,0 +1,358 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Генератор викторин - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🎯 Генератор викторин</h1>
+    <p>ИИ-помощник найдет увлекательные вопросы по вашей теме из глобальных источников знаний</p>
+    {% if openai_enabled %}
+        <div style="background: #d4edda; color: #155724; padding: 0.75rem; border-radius: 4px; border: 1px solid #c3e6cb; margin-top: 1rem;">
+            <strong>🌐 OpenAI включен:</strong> Генерация викторин использует ИИ для поиска реальных фактов и актуальной информации из интернета
+        </div>
+    {% else %}
+        <div style="background: #fff3cd; color: #856404; padding: 0.75rem; border-radius: 4px; border: 1px solid #ffeaa7; margin-top: 1rem;">
+            <strong>💻 Локальная генерация:</strong> Используются встроенные шаблоны. Для использования ИИ из интернета установите OpenAI API ключ
+        </div>
+    {% endif %}
+</div>
+
+<div class="content">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <!-- Форма генерации -->
+        <div class="card">
+            <h3>⚙️ Параметры викторины</h3>
+
+            <form id="quizForm">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="subject">Предмет <span style="color: #e74c3c;">*</span></label>
+                    <select id="subject" name="subject" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Выберите предмет</option>
+                        <option value="Математика">Математика</option>
+                        <option value="Алгебра">Алгебра</option>
+                        <option value="Геометрия">Геометрия</option>
+                        <option value="Физика">Физика</option>
+                        <option value="Химия">Химия</option>
+                        <option value="Биология">Биология</option>
+                        <option value="История">История</option>
+                        <option value="Литература">Литература</option>
+                        <option value="Русский язык">Русский язык</option>
+                        <option value="Английский язык">Английский язык</option>
+                        <option value="Информатика">Информатика</option>
+                        <option value="География">География</option>
+                        <option value="Обществознание">Обществознание</option>
+                        <option value="Другой">Другой предмет</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="topic">Тема <span style="color: #e74c3c;">*</span></label>
+                    <input type="text" id="topic" name="topic" required
+                           placeholder="Например: Квадратные уравнения, Законы Ньютона, Органические соединения"
+                           style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
+                <div class="form-group">
+                    <label for="class_level">Класс/Уровень</label>
+                    <select id="class_level" name="class_level" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">Выберите уровень</option>
+                        <option value="5 класс">5 класс</option>
+                        <option value="6 класс">6 класс</option>
+                        <option value="7 класс">7 класс</option>
+                        <option value="8 класс">8 класс</option>
+                        <option value="9 класс">9 класс</option>
+                        <option value="10 класс">10 класс</option>
+                        <option value="11 класс">11 класс</option>
+                        <option value="Студент 1 курса">Студент 1 курса</option>
+                        <option value="Студент 2 курса">Студент 2 курса</option>
+                        <option value="Студент 3 курса">Студент 3 курса</option>
+                        <option value="Студент 4 курса">Студент 4 курса</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="difficulty">Уровень сложности</label>
+                    <select id="difficulty" name="difficulty" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="easy">Легкий (базовые знания)</option>
+                        <option value="medium" selected>Средний (стандартный)</option>
+                        <option value="hard">Сложный (углубленные знания)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="questions_count">Количество вопросов</label>
+                    <select id="questions_count" name="questions_count" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="3">3 вопроса</option>
+                        <option value="5" selected>5 вопросов</option>
+                        <option value="7">7 вопросов</option>
+                        <option value="10">10 вопросов</option>
+                        <option value="15">15 вопросов</option>
+                        <option value="20">20 вопросов</option>
+                        <option value="25">25 вопросов (углубленно)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="deep_search">Режим поиска</label>
+                    <select id="deep_search" name="deep_search" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="standard">🔍 Стандартный (основные факты по теме)</option>
+                        <option value="deep" selected>🌍 Углубленный (поиск с разных источников)</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 0.25rem;">Углубленный режим ищет информацию по теме из разных глобальных источников знаний</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="language">Язык викторины</label>
+                    <select id="language" name="language" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="russian" selected>🇷🇺 Русский (с переводом интернет-вопросов)</option>
+                        <option value="auto">🌐 Авто (как из источника)</option>
+                        <option value="english">🇬🇧 Английский</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; margin-top: 1rem;">
+                    🎯 Сгенерировать викторину
+                </button>
+            </form>
+        </div>
+
+        <!-- Результат -->
+        <div class="card">
+            <h3>📋 Сгенерированная викторина</h3>
+
+            <div id="loading" style="display: none; text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 1rem;">🤖</div>
+                <p>Генерирую викторину с помощью ИИ...</p>
+                <div style="width: 100%; height: 4px; background: #f0f0f0; border-radius: 2px; margin-top: 1rem;">
+                    <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #007bff, #28a745); border-radius: 2px; animation: loading 2s infinite;"></div>
+                </div>
+            </div>
+
+            <div id="result" style="display: none;">
+                <div id="quizTitle" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem;"></div>
+                <div id="quizDescription" style="margin-bottom: 1rem; color: #666;"></div>
+
+                <div id="questionsList"></div>
+
+                <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                    <button id="saveQuizBtn" class="btn btn-success" style="width: 100%; padding: 0.75rem;">
+                        💾 Сохранить викторину
+                    </button>
+                </div>
+            </div>
+
+            <div id="error" style="display: none; padding: 1rem; background: #f8d7da; color: #721c24; border-radius: 4px; border: 1px solid #f5c6cb;">
+                <strong>❌ Ошибка:</strong> <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes loading {
+    0% { width: 0%; }
+    50% { width: 100%; }
+    100% { width: 0%; }
+}
+
+.question-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #fafafa;
+}
+
+.question-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+
+.options-list {
+    margin-left: 1rem;
+}
+
+.option-item {
+    margin-bottom: 0.25rem;
+}
+
+.correct-answer {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.explanation {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #e8f5e8;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #155724;
+}
+</style>
+
+<script>
+document.getElementById('quizForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+
+    // Показать загрузку
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+
+    fetch('/teacher/quiz-generator/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loading').style.display = 'none';
+
+        if (data.success) {
+            displayQuiz(data.quiz);
+        } else {
+            showError('Не удалось сгенерировать викторину');
+        }
+    })
+    .catch(error => {
+        document.getElementById('loading').style.display = 'none';
+        showError('Ошибка сети: ' + error.message);
+    });
+});
+
+function displayQuiz(quiz) {
+    document.getElementById('quizTitle').textContent = quiz.title;
+    document.getElementById('quizDescription').textContent = quiz.description;
+
+    const questionsList = document.getElementById('questionsList');
+    questionsList.innerHTML = '';
+
+    quiz.questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-card';
+
+        let questionHtml = `<h4>Вопрос ${index + 1}: ${question.question_text}</h4>`;
+
+        if (question.question_type === 'multiple_choice' && question.options) {
+            questionHtml += '<div class="options-list">';
+            question.options.forEach((option, optIndex) => {
+                const isCorrect = optIndex === question.correct_answer;
+                questionHtml += `<div class="option-item ${isCorrect ? 'correct-answer' : ''}">`;
+                questionHtml += `${String.fromCharCode(65 + optIndex)}) ${option}`;
+                if (isCorrect) questionHtml += ' ✓';
+                questionHtml += '</div>';
+            });
+            questionHtml += '</div>';
+        } else if (question.question_type === 'true_false') {
+            const correctText = question.correct_answer ? 'Верно' : 'Неверно';
+            questionHtml += `<div class="correct-answer">${correctText} ✓</div>`;
+        } else if (question.question_type === 'short_answer') {
+            questionHtml += `<div class="correct-answer">Ответ: ${question.correct_answer}</div>`;
+        }
+
+        if (question.explanation) {
+            questionHtml += `<div class="explanation">💡 ${question.explanation}</div>`;
+        }
+
+        questionDiv.innerHTML = questionHtml;
+        questionsList.appendChild(questionDiv);
+    });
+
+    document.getElementById('result').style.display = 'block';
+}
+
+function showError(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('error').style.display = 'block';
+}
+
+document.getElementById('saveQuizBtn').addEventListener('click', function() {
+    const quizData = {
+        title: document.getElementById('quizTitle').textContent,
+        description: document.getElementById('quizDescription').textContent,
+        subject: document.getElementById('subject').value,
+        class_level: document.getElementById('class_level').value,
+        questions: []
+    };
+
+    // Собираем вопросы
+    const questionCards = document.querySelectorAll('.question-card');
+    questionCards.forEach((card, index) => {
+        const questionText = card.querySelector('h4').textContent.replace(`Вопрос ${index + 1}: `, '');
+        const correctAnswerElement = card.querySelector('.correct-answer');
+
+        let questionType = 'short_answer';
+        let correctAnswer = '';
+        let options = null;
+
+        if (correctAnswerElement) {
+            const answerText = correctAnswerElement.textContent;
+            if (answerText.includes('Верно') || answerText.includes('Неверно')) {
+                questionType = 'true_false';
+                correctAnswer = answerText.includes('Верно');
+            } else if (answerText.includes(')')) {
+                // Multiple choice
+                questionType = 'multiple_choice';
+                const optionMatch = answerText.match(/([A-Z])\)/);
+                if (optionMatch) {
+                    correctAnswer = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(optionMatch[1]);
+                }
+                // Собираем варианты
+                const optionElements = card.querySelectorAll('.option-item');
+                options = [];
+                optionElements.forEach(el => {
+                    options.push(el.textContent.replace(/^[A-Z]\)\s*/, '').replace(/\s*✓$/, ''));
+                });
+            } else {
+                questionType = 'short_answer';
+                correctAnswer = answerText.replace('Ответ: ', '');
+            }
+        }
+
+        const explanation = card.querySelector('.explanation');
+        const explanationText = explanation ? explanation.textContent.replace('💡 ', '') : '';
+
+        quizData.questions.push({
+            question_text: questionText,
+            question_type: questionType,
+            options: options,
+            correct_answer: correctAnswer,
+            explanation: explanationText,
+            points: 1
+        });
+    });
+
+    // Отправляем на сервер
+    fetch('/teacher/api/quiz/create-from-ai/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: 'quiz_data=' + encodeURIComponent(JSON.stringify(quizData))
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message + '\n\nВикторина сохранена успешно!');
+            window.location.href = '/teacher/quizzes/';
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка сети: ' + error.message);
+    });
+});
+</script>
+
+{% endblock %}

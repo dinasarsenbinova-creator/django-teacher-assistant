@@ -1,0 +1,190 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Обучение модели{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Обучение нейросетевой модели</h1>
+            <p class="text-muted">Курс: <strong>{{ curriculum.title }}</strong></p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'teacher:nn_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Параметры обучения</h5>
+                </div>
+                <div class="card-body">
+                    <form id="trainingForm">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            <label for="epochs">Количество эпох обучения:</label>
+                            <input type="number" class="form-control" id="epochs" name="epochs" 
+                                   value="100" min="10" max="500">
+                            <small class="form-text text-muted">
+                                Больше эпох = лучшее обучение, но дольше ждать
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="batchSize">Размер батча:</label>
+                            <input type="number" class="form-control" id="batchSize" name="batch_size" 
+                                   value="8" min="4" max="32">
+                            <small class="form-text text-muted">
+                                Размер группы для обработки за один раз
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-brain"></i> Начать обучение
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <div id="progressContainer" style="display: none;">
+                        <h6>Процесс обучения:</h6>
+                        <div class="progress" style="height: 25px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+                        <p id="statusMessage" class="mt-3">Инициализация...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="resultsCard" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">✓ Модель успешно обучена!</h5>
+                </div>
+                <div class="card-body">
+                    <div id="resultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация о курсе</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Название:</dt>
+                        <dd class="col-sm-6">{{ curriculum.title }}</dd>
+
+                        <dt class="col-sm-6">Предмет:</dt>
+                        <dd class="col-sm-6">{{ curriculum.subject.name|default:"—" }}</dd>
+
+                        <dt class="col-sm-6">Класс:</dt>
+                        <dd class="col-sm-6">{{ curriculum.get_class_level_display }}</dd>
+
+                        <dt class="col-sm-6">Год:</dt>
+                        <dd class="col-sm-6">{{ curriculum.year }}</dd>
+
+                        <dt class="col-sm-6">Создано:</dt>
+                        <dd class="col-sm-6">{{ curriculum.created_at|date:"d.m.Y" }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Как это работает?</h5>
+                </div>
+                <div class="card-body small">
+                    <ol>
+                        <li>Собираются данные по оценкам студентов</li>
+                        <li>Модель обучается на этих данных</li>
+                        <li>Полученная модель может предсказывать будущие оценки</li>
+                        <li>Предсказания можно проверить по фактическим оценкам</li>
+                    </ol>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <strong>Совет:</strong> Чем больше студентов в курсе, тем лучше будет модель!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('trainingForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const epochs = document.getElementById('epochs').value;
+    const batchSize = document.getElementById('batchSize').value;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    document.getElementById('progressContainer').style.display = 'block';
+    
+    try {
+        const response = await fetch('{{ request.path }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                epochs: epochs,
+                batch_size: batchSize
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            updateProgress(100, 'Обучение завершено!');
+            
+            setTimeout(() => {
+                const resultsHtml = `
+                    <div class="alert alert-success">
+                        <h5>✓ Модель успешно обучена!</h5>
+                        <dl class="row mt-3">
+                            <dt class="col-sm-4">ID модели:</dt>
+                            <dd class="col-sm-8"><code>${data.model_id}</code></dd>
+                            
+                            <dt class="col-sm-4">Точность (MAE):</dt>
+                            <dd class="col-sm-8">${data.accuracy}</dd>
+                            
+                            <dt class="col-sm-4">Примеров обучения:</dt>
+                            <dd class="col-sm-8">${data.samples} студентов</dd>
+                        </dl>
+                    </div>
+                    <a href="/teacher/neural_network/dashboard/" class="btn btn-primary">
+                        Перейти в панель управления
+                    </a>
+                `;
+                
+                document.getElementById('resultContent').innerHTML = resultsHtml;
+                document.getElementById('resultsCard').style.display = 'block';
+            }, 1000);
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    } catch (error) {
+        alert('Ошибка при обучении: ' + error);
+    }
+});
+
+function updateProgress(percent, message) {
+    const bar = document.getElementById('progressBar');
+    const status = document.getElementById('statusMessage');
+    bar.style.width = percent + '%';
+    bar.textContent = percent + '%';
+    status.textContent = message;
+}
+</script>
+{% endblock %}

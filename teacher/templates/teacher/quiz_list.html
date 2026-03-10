@@ -1,0 +1,112 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Викторины - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🎯 Викторины</h1>
+    <p>Создавайте и управляйте интерактивными викторинами для проверки знаний</p>
+</div>
+
+<div class="content">
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'teacher:quiz_create' %}" class="btn btn-success">+ Создать викторину</a>
+        <a href="{% url 'teacher:quiz_generator' %}" class="btn" style="background-color: #e67e22; color: white; margin-left: 1rem;">🤖 Генератор викторин</a>
+    </div>
+
+    {% if quizzes %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+            {% for quiz in quizzes %}
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; flex: 1;">{{ quiz.title }}</h3>
+                        <span class="badge {% if quiz.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                            {% if quiz.is_active %}Активна{% else %}Неактивна{% endif %}
+                        </span>
+                    </div>
+
+                    {% if quiz.description %}
+                        <p style="color: #666; margin-bottom: 1rem;">{{ quiz.description|truncatechars:100 }}</p>
+                    {% endif %}
+
+                    <div style="margin-bottom: 1rem;">
+                        <small style="color: #666;">
+                            {% if quiz.subject %}<strong>Предмет:</strong> {{ quiz.subject }}<br>{% endif %}
+                            {% if quiz.class_name %}<strong>Группа:</strong> {{ quiz.class_name }}<br>{% endif %}
+                            <strong>Вопросов:</strong> {{ quiz.get_questions_count }}<br>
+                            <strong>Баллов:</strong> {{ quiz.get_total_points }}<br>
+                            <strong>Сложность:</strong> {{ quiz.get_difficulty_display }}<br>
+                            {% if quiz.time_limit > 0 %}<strong>Время:</strong> {{ quiz.time_limit }} мин<br>{% endif %}
+                            <strong>Создано:</strong> {{ quiz.created_at|date:"d.m.Y" }}
+                        </small>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="{% url 'teacher:quiz_detail' quiz.pk %}" class="btn btn-sm">👁 Просмотр</a>
+                        <a href="{% url 'teacher:quiz_update' quiz.pk %}" class="btn btn-sm btn-primary">✏ Редактировать</a>
+                        <a href="{% url 'teacher:quiz_take' quiz.pk %}" class="btn btn-sm" style="background-color: #28a745; color: white;">▶ Пройти</a>
+                        <a href="{% url 'teacher:quiz_delete' quiz.pk %}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('Удалить викторину?')">🗑 Удалить</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+            <div style="margin-top: 2rem; text-align: center;">
+                <span class="step-links">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">&laquo; первая</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">предыдущая</a>
+                    {% endif %}
+
+                    <span class="current">
+                        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}.
+                    </span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">следующая</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">последняя &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <h3 style="color: #666; margin-bottom: 1rem;">🎯 Викторины не найдены</h3>
+            <p style="color: #999; margin-bottom: 2rem;">Создайте свою первую викторину для проверки знаний студентов</p>
+            <div>
+                <a href="{% url 'teacher:quiz_create' %}" class="btn btn-success">Создать викторину</a>
+                <a href="{% url 'teacher:quiz_generator' %}" class="btn" style="background-color: #e67e22; color: white; margin-left: 1rem;">🤖 Сгенерировать ИИ</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.badge-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+}
+</style>
+{% endblock %}

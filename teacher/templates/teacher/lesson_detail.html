@@ -1,0 +1,332 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}{{ lesson.title }} - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1 class="editable-title" style="cursor:pointer;" title="Кликните для редактирования">{{ lesson.title }}</h1>
+    <p>{{ lesson.subject }} | {{ lesson.class_name }} | <span class="editable-date" style="cursor:pointer;" title="Кликните для редактирования">{{ lesson.date|date:"d.m.Y" }}</span></p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'teacher:lesson_update' lesson.pk %}" class="btn">Полное редактирование</a>
+        <a href="{% url 'teacher:lesson_delete' lesson.pk %}" class="btn btn-danger" onclick="return confirm('Вы уверены, что хотите удалить урок? Это действие нельзя отменить.')">Удалить урок</a>
+        <a href="{% url 'teacher:lesson_list' %}" class="btn" style="background-color: #95a5a6;">Назад</a>
+    </div>
+</div>
+
+<div data-lesson-id="{{ lesson.id }}" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+    <div>
+        {% if lesson.objectives %}
+            <div class="card editable-section" data-field="objectives">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>🎯 Цели и задачи</h3>
+                    <small style="cursor:pointer; color:#27ae60;" title="Кликните для редактирования">[редакт.]</small>
+                </div>
+                <p class="content-field">{{ lesson.objectives|linebreaks }}</p>
+            </div>
+        {% else %}
+            <div class="card editable-section" data-field="objectives" style="border: 2px dashed #ccc; cursor:pointer;">
+                <p style="color:#999;">+ Добавить цели и задачи</p>
+            </div>
+        {% endif %}
+
+        {% if lesson.content %}
+            <div class="card editable-section" data-field="content">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>📖 Содержание урока</h3>
+                    <small style="cursor:pointer; color:#27ae60;" title="Кликните для редактирования">[редакт.]</small>
+                </div>
+                <p class="content-field">{{ lesson.content|linebreaks }}</p>
+            </div>
+        {% else %}
+            <div class="card editable-section" data-field="content" style="border: 2px dashed #ccc; cursor:pointer;">
+                <p style="color:#999;">+ Добавить содержание урока</p>
+            </div>
+        {% endif %}
+
+        {% if lesson.materials %}
+            <div class="card editable-section" data-field="materials">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>📚 Материалы и ресурсы</h3>
+                    <small style="cursor:pointer; color:#27ae60;" title="Кликните для редактирования">[редакт.]</small>
+                </div>
+                <p class="content-field">{{ lesson.materials|linebreaks }}</p>
+            </div>
+        {% else %}
+            <div class="card editable-section" data-field="materials" style="border: 2px dashed #ccc; cursor:pointer;">
+                <p style="color:#999;">+ Добавить материалы</p>
+            </div>
+        {% endif %}
+
+        {% if lesson.homework %}
+            <div class="card editable-section" data-field="homework">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>📝 Домашнее задание</h3>
+                    <small style="cursor:pointer; color:#27ae60;" title="Кликните для редактирования">[редакт.]</small>
+                </div>
+                <p class="content-field">{{ lesson.homework|linebreaks }}</p>
+            </div>
+        {% else %}
+            <div class="card editable-section" data-field="homework" style="border: 2px dashed #ccc; cursor:pointer;">
+                <p style="color:#999;">+ Добавить домашнее задание</p>
+            </div>
+        {% endif %}
+
+        {% if lesson.notes %}
+            <div class="card editable-section" data-field="notes">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>📌 Примечания</h3>
+                    <small style="cursor:pointer; color:#27ae60;" title="Кликните для редактирования">[редакт.]</small>
+                </div>
+                <p class="content-field">{{ lesson.notes|linebreaks }}</p>
+            </div>
+        {% else %}
+            <div class="card editable-section" data-field="notes" style="border: 2px dashed #ccc; cursor:pointer;">
+                <p style="color:#999;">+ Добавить примечания</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="card">
+            <h3>📋 Информация</h3>
+            <table style="font-size: 0.9rem;">
+                <tr>
+                    <td style="font-weight: bold;">Тема:</td>
+                    <td>{{ lesson.topic.title|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Программа:</td>
+                    <td>{{ lesson.curriculum.title }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Класс:</td>
+                    <td>{{ lesson.class_name }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Предмет:</td>
+                    <td>{{ lesson.subject }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Дата:</td>
+                    <td class="editable-date" style="cursor:pointer;" title="Кликните для редактирования">{{ lesson.date|date:"d.m.Y" }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Создан:</td>
+                    <td>{{ lesson.created_at|date:"d.m.Y H:i" }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .editable-section {
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .editable-section:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .editable-title, .editable-date {
+        transition: background-color 0.3s;
+    }
+    
+    .editable-title:hover, .editable-date:hover {
+        background-color: #f0f0f0;
+        border-radius: 3px;
+        padding: 0.25rem;
+    }
+    
+    .edit-textarea {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 1rem;
+        font-family: inherit;
+        width: 100%;
+        min-height: 150px;
+    }
+    
+    .edit-input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 1rem;
+        min-width: 200px;
+    }
+    
+    .save-btn {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .save-btn:hover {
+        background-color: #229954;
+    }
+    
+    .cancel-btn {
+        background-color: #95a5a6;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 0.3rem;
+        margin-top: 0.5rem;
+    }
+    
+    .cancel-btn:hover {
+        background-color: #7f8c8d;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lessonContainer = document.querySelector('[data-lesson-id]');
+    const lessonId = lessonContainer.dataset.lessonId;
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    // Редактирование текстовых полей (objectives, content, materials, homework, notes)
+    document.querySelectorAll('.editable-section').forEach(section => {
+        section.addEventListener('click', function() {
+            const field = this.dataset.field;
+            const contentField = this.querySelector('.content-field');
+            const currentValue = contentField ? contentField.textContent.trim() : '';
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = currentValue;
+            textarea.className = 'edit-textarea';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Сохранить';
+            saveBtn.className = 'save-btn';
+            saveBtn.onclick = (e) => {
+                e.preventDefault();
+                const newValue = textarea.value;
+                
+                fetch(`/teacher/lessons/${lessonId}/update-ajax/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: `${field}=${encodeURIComponent(newValue)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка сохранения: ' + error);
+                });
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Отмена';
+            cancelBtn.className = 'cancel-btn';
+            cancelBtn.onclick = (e) => {
+                e.preventDefault();
+                location.reload();
+            };
+            
+            if (contentField) {
+                contentField.replaceWith(textarea);
+            } else {
+                this.innerHTML = '';
+                this.appendChild(textarea);
+            }
+            
+            const btnContainer = document.createElement('div');
+            btnContainer.appendChild(saveBtn);
+            btnContainer.appendChild(cancelBtn);
+            this.appendChild(btnContainer);
+            textarea.focus();
+        });
+    });
+    
+    // Редактирование заголовка
+    document.querySelectorAll('.editable-title').forEach(title => {
+        title.addEventListener('click', function() {
+            const currentValue = this.textContent.trim();
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            input.className = 'edit-input';
+            input.style.fontSize = '2rem';
+            input.style.fontWeight = 'bold';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Сохр.';
+            saveBtn.className = 'save-btn';
+            saveBtn.onclick = (e) => {
+                e.preventDefault();
+                const newValue = input.value;
+                
+                fetch(`/teacher/lessons/${lessonId}/update-ajax/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: `title=${encodeURIComponent(newValue)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка сохранения: ' + error);
+                });
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Отмена';
+            cancelBtn.className = 'cancel-btn';
+            cancelBtn.onclick = (e) => {
+                e.preventDefault();
+                location.reload();
+            };
+            
+            this.textContent = '';
+            this.appendChild(input);
+            this.appendChild(document.createElement('br'));
+            this.appendChild(saveBtn);
+            this.appendChild(cancelBtn);
+            input.focus();
+        });
+    });
+});
+</script>
+{% endblock %}
+

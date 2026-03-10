@@ -1,0 +1,125 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Все нейросетевые модели{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Нейросетевые модели</h1>
+            <p class="text-muted">{{ models|length }} активных моделей</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'teacher:nn_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    {% if models %}
+        <div class="row">
+            {% for model in models %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ model.name }}</h5>
+                            <p class="card-text text-muted small">{{ model.description }}</p>
+                            
+                            <div class="row text-center small my-3">
+                                <div class="col-6 border-right">
+                                    <strong>Точность</strong><br>
+                                    <span class="badge badge-success">
+                                        MAE: {{ model.accuracy|floatformat:4 }}
+                                    </span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Студентов</strong><br>
+                                    <span class="badge badge-info">{{ model.training_samples }}</span>
+                                </div>
+                            </div>
+
+                            <dl class="row small mb-0">
+                                <dt class="col-sm-6">Предмет:</dt>
+                                <dd class="col-sm-6">{{ model.subject.name|default:"—" }}</dd>
+
+                                <dt class="col-sm-6">Программа:</dt>
+                                <dd class="col-sm-6">
+                                    {{ model.curriculum.title|truncatewords:5|default:"—" }}
+                                </dd>
+
+                                <dt class="col-sm-6">Обучена:</dt>
+                                <dd class="col-sm-6">{{ model.last_trained|date:"d.m.Y"|default:"—" }}</dd>
+
+                                <dt class="col-sm-6">Статус:</dt>
+                                <dd class="col-sm-6">
+                                    {% if model.is_active %}
+                                        <span class="badge badge-success">Активна</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Неактивна</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a href="{% url 'teacher:nn_model_detail' model.id %}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </a>
+                            <a href="{% url 'teacher:nn_model_statistics' model.id %}" 
+                               class="btn btn-sm btn-info">
+                                <i class="fas fa-chart-bar"></i> Статистика
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h4><i class="fas fa-info-circle"></i> Нет обученных моделей</h4>
+            <p>Начните с обучения модели на одном из ваших курсов.</p>
+            <a href="{% url 'teacher:curriculum_list' %}" class="btn btn-primary">
+                К курсам
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Пагинация -->
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

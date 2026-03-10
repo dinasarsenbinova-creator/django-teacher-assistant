@@ -1,0 +1,280 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Журнал оценок - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>📝 Журнал оценок</h1>
+    <p>Управляйте оценками учащихся. Кликните на оценку или комментарий для редактирования.</p>
+    <a href="{% url 'teacher:grade_create' %}" class="btn btn-success" style="margin-top: 1rem;">+ Добавить оценку</a>
+</div>
+
+<div class="content">
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+        <form method="get" style="display: flex; gap: 1rem; width: 100%;">
+            <select name="class_name" style="flex: 1;">
+                <option value="">Все классы</option>
+                {% for class_name in classes %}
+                    <option value="{{ class_name }}" {% if request.GET.class_name == class_name %}selected{% endif %}>
+                        {{ class_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="subject" style="flex: 1;">
+                <option value="">Все предметы</option>
+                {% for subject in subjects %}
+                    <option value="{{ subject }}" {% if request.GET.subject == subject %}selected{% endif %}>
+                        {{ subject }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn" style="white-space: nowrap;">Фильтр</button>
+        </form>
+    </div>
+
+    {% if grades %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ФИО ученика</th>
+                    <th>Класс</th>
+                    <th>Предмет</th>
+                    <th>Оценка</th>
+                    <th>Тип работы</th>
+                    <th>Дата</th>
+                    <th>Комментарий</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for grade in grades %}
+                    <tr data-grade-id="{{ grade.id }}">
+                        <td>{{ grade.student_name }}</td>
+                        <td>{{ grade.class_name }}</td>
+                        <td>{{ grade.subject }}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 1.1rem; cursor: pointer; user-select: none;" class="editable-grade" title="Кликните для редактирования">
+                            {% if grade.grade >= 4 %}
+                                <span style="background-color:#27ae60;color:white;padding:0.25rem 0.5rem;border-radius:3px;">{{ grade.grade }}</span>
+                            {% elif grade.grade >= 3 %}
+                                <span style="background-color:#f39c12;color:white;padding:0.25rem 0.5rem;border-radius:3px;">{{ grade.grade }}</span>
+                            {% else %}
+                                <span style="background-color:#e74c3c;color:white;padding:0.25rem 0.5rem;border-radius:3px;">{{ grade.grade }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ grade.get_grade_type_display }}</td>
+                        <td>{{ grade.date|date:"d.m.Y" }}</td>
+                        <td style="cursor: pointer; color: #666; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" class="editable-comment" title="Кликните для редактирования">
+                            {{ grade.comment|default:"—" }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #999; text-align: center; padding: 2rem;">Оценки не добавлены</p>
+    {% endif %}
+</div>
+
+{% if is_paginated %}
+    <div style="text-align: center; margin-top: 2rem;">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn">Первая</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn">Назад</a>
+        {% endif %}
+
+        <span style="margin: 0 1rem;">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn">Далее</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn">Последняя</a>
+        {% endif %}
+    </div>
+{% endif %}
+
+<style>
+    .editable-grade:hover, .editable-comment:hover {
+        background-color: #f0f0f0;
+        padding: 0.25rem;
+        border-radius: 3px;
+    }
+    
+    .edit-input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 1rem;
+        min-width: 100px;
+    }
+    
+    .edit-select {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 0.9rem;
+    }
+    
+    .save-btn {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 0.5rem;
+    }
+    
+    .save-btn:hover {
+        background-color: #229954;
+    }
+    
+    .cancel-btn {
+        background-color: #95a5a6;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 0.3rem;
+    }
+    
+    .cancel-btn:hover {
+        background-color: #7f8c8d;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем CSRF token из HTML
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    // Редактирование оценки
+    document.querySelectorAll('.editable-grade').forEach(cell => {
+        cell.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const gradeId = row.dataset.gradeId;
+            const currentGrade = this.textContent.trim();
+            
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '1';
+            input.max = '5';
+            input.value = currentGrade;
+            input.className = 'edit-input';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Сохр.';
+            saveBtn.className = 'save-btn';
+            saveBtn.onclick = (e) => {
+                e.preventDefault();
+                const newGrade = input.value;
+                
+                fetch(`/teacher/grades/${gradeId}/update-ajax/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: `grade=${encodeURIComponent(newGrade)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload(); // Обновить страницу для отражения изменений
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка сохранения: ' + error);
+                });
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Отмена';
+            cancelBtn.className = 'cancel-btn';
+            cancelBtn.onclick = (e) => {
+                e.preventDefault();
+                location.reload();
+            };
+            
+            this.textContent = '';
+            this.appendChild(input);
+            this.appendChild(saveBtn);
+            this.appendChild(cancelBtn);
+            input.focus();
+        });
+    });
+    
+    // Редактирование комментария
+    document.querySelectorAll('.editable-comment').forEach(cell => {
+        cell.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const gradeId = row.dataset.gradeId;
+            const currentComment = this.textContent.trim() === '—' ? '' : this.textContent.trim();
+            
+            const input = document.createElement('textarea');
+            input.value = currentComment;
+            input.className = 'edit-input';
+            input.style.width = '200px';
+            input.style.minHeight = '60px';
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Сохр.';
+            saveBtn.className = 'save-btn';
+            saveBtn.onclick = (e) => {
+                e.preventDefault();
+                const newComment = input.value;
+                
+                fetch(`/teacher/grades/${gradeId}/update-ajax/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: `comment=${encodeURIComponent(newComment)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка сохранения: ' + error);
+                });
+            };
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Отмена';
+            cancelBtn.className = 'cancel-btn';
+            cancelBtn.onclick = (e) => {
+                e.preventDefault();
+                location.reload();
+            };
+            
+            this.textContent = '';
+            this.appendChild(input);
+            this.appendChild(saveBtn);
+            this.appendChild(cancelBtn);
+            input.focus();
+        });
+    });
+});
+</script>
+{% endblock %}
+

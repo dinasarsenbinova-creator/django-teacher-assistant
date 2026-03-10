@@ -1,0 +1,101 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}{{ test.title }} - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>{{ test.title }}</h1>
+    <p>{{ test.get_test_type_display }} | {{ test.subject }} | {{ test.class_name }}</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'teacher:test_update' test.pk %}" class="btn">Редактировать</a>
+        <a href="{% url 'teacher:test_list' %}" class="btn" style="background-color: #95a5a6;">Назад</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+    <div>
+        {% if test.description %}
+            <div class="card">
+                <h3>📄 Описание</h3>
+                <p>{{ test.description|linebreaks }}</p>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <h3>❓ Содержание теста</h3>
+            <p>{{ test.content|linebreaks }}</p>
+        </div>
+
+        {% if test.answer_key %}
+            <div class="card">
+                <h3>✅ Ключ ответов</h3>
+                <p>{{ test.answer_key|linebreaks }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="card">
+            <h3>⚙️ Параметры</h3>
+            <table style="font-size: 0.9rem;">
+                <tr>
+                    <td style="font-weight: bold;">Тип:</td>
+                    <td>{{ test.get_test_type_display }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Предмет:</td>
+                    <td>{{ test.subject }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Класс:</td>
+                    <td>{{ test.class_name }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Макс. балл:</td>
+                    <td>{{ test.max_score }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Время (мин):</td>
+                    <td>{{ test.duration_minutes }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Тема:</td>
+                    <td>{{ test.topic|default:"—" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>📊 Результаты</h3>
+            <p style="margin-bottom: 1rem;">
+                <strong>Всего: {{ results.count }}</strong> результатов
+            </p>
+            {% if results %}
+                <table style="font-size: 0.85rem;">
+                    <tr>
+                        <th>Ученик</th>
+                        <th>Балл</th>
+                        <th>%</th>
+                    </tr>
+                    {% for result in results|slice:":10" %}
+                        <tr>
+                            <td>{{ result.student_name|truncatewords:2 }}</td>
+                            <td>{{ result.score }}</td>
+                            <td>{{ result.percentage|floatformat:0 }}%</td>
+                        </tr>
+                    {% endfor %}
+                    {% if results.count > 10 %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">
+                                ... и ещё {{ results.count|add:"-10" }} результатов
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+            {% else %}
+                <p style="color: #999;">Результаты не добавлены</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

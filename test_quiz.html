@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Тест викторины</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .link-box {
+            background: #f0f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        a {
+            color: #0066ff;
+            font-size: 18px;
+            text-decoration: none;
+            padding: 10px 20px;
+            background: #e8f4ff;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        a:hover {
+            background: #0066ff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест викторины</h1>
+    
+    <div class="link-box">
+        <h2>Ссылки для тестирования:</h2>
+        <p><a href="http://localhost:8000/teacher/quizzes/8/" target="_blank">📝 Детали викторины (ID: 8)</a></p>
+        <p><a href="http://localhost:8000/teacher/quizzes/8/take/" target="_blank">▶ Пройти викторину (авторизованный)</a></p>
+        <p><a href="http://localhost:8000/teacher/quizzes/8/student/" target="_blank">👨‍🎓 Пройти викторину (студент)</a></p>
+        <p><a href="http://localhost:8000/admin/" target="_blank">⚙️ Админка Django</a></p>
+    </div>
+    
+    <div class="link-box">
+        <h2>Инструкции:</h2>
+        <ol>
+            <li>Убедитесь, что Django сервер запущен (python manage.py runserver)</li>
+            <li>Нажмите на ссылку для прохождения викторины</li>
+            <li>Проверьте, отображаются ли вопросы и варианты ответов</li>
+            <li>Если не отображаются - откройте консоль браузера (F12) и проверьте ошибки</li>
+        </ol>
+    </div>
+</body>
+</html>

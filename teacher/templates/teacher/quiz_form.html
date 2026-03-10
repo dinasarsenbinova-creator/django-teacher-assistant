@@ -1,0 +1,137 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}{% if object %}Редактирование{% else %}Создание{% endif %} викторины - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>{% if object %}✏ Редактирование{% else %}+ Создание{% endif %} викторины</h1>
+    <p>{% if object %}Измените параметры викторины{% else %}Заполните информацию о новой викторине{% endif %}</p>
+</div>
+
+<div class="content">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="{{ form.title.id_for_label }}">Название викторины <span style="color: #e74c3c;">*</span></label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="error">{{ form.title.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Описание</label>
+                {{ form.description }}
+                <small style="color: #666;">Краткое описание викторины для студентов</small>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="{{ form.curriculum.id_for_label }}">Рабочая программа</label>
+                    {{ form.curriculum }}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.topic.id_for_label }}">Тема</label>
+                    {{ form.topic }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="{{ form.subject.id_for_label }}">Предмет</label>
+                    {{ form.subject }}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.class_name.id_for_label }}">Группа студентов</label>
+                    {{ form.class_name }}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.difficulty.id_for_label }}">Уровень сложности</label>
+                    {{ form.difficulty }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.time_limit.id_for_label }}">Ограничение времени (минуты)</label>
+                {{ form.time_limit }}
+                <small style="color: #666;">0 - без ограничения времени</small>
+            </div>
+
+            {% if object %}
+                <div class="form-group">
+                    <label for="{{ form.is_active.id_for_label }}">
+                        {{ form.is_active }} Активна
+                    </label>
+                    <small style="color: #666;">Неактивные викторины недоступны для прохождения</small>
+                </div>
+            {% endif %}
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-success">
+                    {% if object %}💾 Сохранить изменения{% else %}✅ Создать викторину{% endif %}
+                </button>
+                <a href="{% url 'teacher:quiz_list' %}" class="btn">Отмена</a>
+            </div>
+        </form>
+    </div>
+
+    {% if object %}
+        <div class="card" style="margin-top: 2rem;">
+            <h3>📊 Статистика викторины</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #3498db;">{{ object.get_questions_count }}</div>
+                    <div style="color: #666;">Вопросов</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #e67e22;">{{ object.get_total_points }}</div>
+                    <div style="color: #666;">Баллов</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; font-weight: bold; color: #28a745;">{{ object.attempts.count }}</div>
+                    <div style="color: #666;">Попыток</div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.error {
+    color: #e74c3c;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+</style>
+{% endblock %}

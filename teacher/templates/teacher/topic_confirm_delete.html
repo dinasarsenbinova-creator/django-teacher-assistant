@@ -1,0 +1,57 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Удаление темы - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>⚠️ Удаление темы</h1>
+</div>
+
+<div class="content" style="max-width: 500px; margin: 0 auto;">
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="color: #856404; margin-top: 0;">Вы уверены?</h3>
+        <p style="color: #856404;">Вы собираетесь удалить тему <strong>"{{ object.title }}"</strong></p>
+        
+        <ul style="color: #856404;">
+            <li>Тема будет удалена из программы</li>
+            <li>Уроки, связанные с этой темой, останутся в системе</li>
+            <li>Это действие нельзя отменить</li>
+        </ul>
+    </div>
+
+    <form method="post" style="text-align: center;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Удалить тему</button>
+        <a href="{% url 'teacher:topic_list' object.curriculum.id %}" class="btn" style="background-color: #95a5a6;">Отмена</a>
+    </form>
+</div>
+
+<style>
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        margin: 0.5rem;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-danger {
+        background-color: #e74c3c;
+    }
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+    }
+</style>
+{% endblock %}

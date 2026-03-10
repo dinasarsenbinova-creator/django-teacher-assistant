@@ -1,0 +1,117 @@
+{% extends "core/base.html" %}
+
+{% block title %}Главная - Образовательная платформа{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <h2>🎓 Добро пожаловать на образовательную платформу!</h2>
+        <p class="lead">Наша платформа предназначена для управления образовательным процессом в колледже.</p>
+        
+        <div class="alert alert-info">
+            <h4>✨ Возможности платформы:</h4>
+            <ul>
+                <li><strong>Управление программами</strong> - создание и редактирование рабочих программ</li>
+                <li><strong>Управление предметами</strong> - создавайте и систематизируйте учебные дисциплины</li>
+                <li><strong>Управление студентами</strong> - отслеживание групп и списков студентов</li>
+                <li><strong>Управление оценками</strong> - фиксирование и анализ успеваемости</li>
+                <li><strong>Предсказание оценок</strong> - использование нейросети для анализа тенденций</li>
+                <li><strong>Расписание и уроки</strong> - планирование учебного процесса</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title">📚 Начните с предметов</h5>
+                <p class="card-text">Посмотрите список всех доступных предметов или создайте новый.</p>
+                <a href="{% url 'core:subject_list' %}" class="btn btn-primary w-100">
+                    Перейти к предметам
+                </a>
+            </div>
+        </div>
+
+        {% if user.is_authenticated %}
+            <div class="card shadow mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Панель педагога</h5>
+                    <p class="card-text">Доступ к полному функционалу управления программой.</p>
+                    <a href="{% url 'teacher:dashboard' %}" class="btn btn-success w-100">
+                        Открыть панель
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="card shadow mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">🔐 Полный доступ</h5>
+                    <p class="card-text">Войдите в систему, чтобы создавать и управлять предметами.</p>
+                    <a href="{% url 'login' %}" class="btn btn-warning w-100">
+                        Войти в систему
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<hr class="my-5">
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">🚀 Быстрый старт</h5>
+                <ol>
+                    <li>Войдите в систему (если у вас еще нет аккаунта, обратитесь к администратору)</li>
+                    <li>Перейдите на страницу <a href="{% url 'core:subject_list' %}">Предметы</a></li>
+                    <li>Создайте новый предмет, нажав кнопку "Создать предмет"</li>
+                    <li>Заполните информацию о предмете</li>
+                    <li>Сохраните и используйте в программах обучения</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">💡 Советы</h5>
+                <ul>
+                    <li>Задавайте уникальные названия предметам</li>
+                    <li>Добавляйте подробное описание для лучшего понимания</li>
+                    <li>Вы можете редактировать созданные вами предметы</li>
+                    <li>Используйте стандартные названия дисциплин</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 8px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .btn {
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .alert {
+        border: none;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}

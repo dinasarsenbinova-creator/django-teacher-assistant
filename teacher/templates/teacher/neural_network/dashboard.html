@@ -1,0 +1,192 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Нейросетевые модели{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Управление нейросетевыми моделями</h1>
+            <p class="text-muted">Создание и обучение моделей для предсказания оценок студентов</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'teacher:nn_models_list' %}" class="btn btn-primary">
+                <i class="fas fa-cube"></i> Все модели
+            </a>
+            <a href="{% url 'teacher:nn_predictions' %}" class="btn btn-info">
+                <i class="fas fa-chart-line"></i> Предсказания
+            </a>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Активные модели</h5>
+                    <h3 class="text-primary">{{ models_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Всего предсказаний</h5>
+                    <h3 class="text-info">{{ predictions_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Точные предсказания</h5>
+                    <h3 class="text-success">{{ accurate_predictions }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Общая точность</h5>
+                    <h3 class="text-warning">{{ accuracy_rate|floatformat:1 }}%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Активные модели -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Активные модели</h5>
+        </div>
+        <div class="card-body">
+            {% if models %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Предмет</th>
+                                <th>Программа</th>
+                                <th>Точность</th>
+                                <th>Обучено на</th>
+                                <th>Последнее обновление</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model in models %}
+                                <tr>
+                                    <td><strong>{{ model.name }}</strong></td>
+                                    <td>{{ model.subject.name|default:"—" }}</td>
+                                    <td>{{ model.curriculum.title|default:"—" }}</td>
+                                    <td>
+                                        <span class="badge badge-success">
+                                            MAE: {{ model.accuracy|floatformat:4 }}
+                                        </span>
+                                    </td>
+                                    <td>{{ model.training_samples }} студентов</td>
+                                    <td>{{ model.last_trained|date:"d.m.Y H:i"|default:"—" }}</td>
+                                    <td>
+                                        <a href="{% url 'teacher:nn_model_detail' model.id %}" 
+                                           class="btn btn-sm btn-info">
+                                            Просмотр
+                                        </a>
+                                        <a href="{% url 'teacher:nn_model_statistics' model.id %}" 
+                                           class="btn btn-sm btn-secondary">
+                                            Статистика
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Пока нет обученных моделей. 
+                    <a href="{% url 'teacher:curriculum_list' %}">Обучите модель на одном из курсов</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Последние предсказания -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Последние 10 предсказаний</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_predictions %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Студент</th>
+                                <th>Предмет</th>
+                                <th>Предсказанная оценка</th>
+                                <th>Уверенность</th>
+                                <th>Фактическая оценка</th>
+                                <th>Точность</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pred in recent_predictions %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'teacher:student_analysis' pred.student_name pred.curriculum.id %}">
+                                            {{ pred.student_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ pred.subject.name }}</td>
+                                    <td>
+                                        <strong>{{ pred.predicted_grade|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">
+                                            {{ pred.confidence|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if pred.actual_grade %}
+                                            {{ pred.actual_grade }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if pred.is_accurate %}
+                                            <span class="badge badge-success">✓ Точно</span>
+                                        {% elif pred.is_accurate is None %}
+                                            <span class="badge badge-warning">? Не проверено</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">✗ Неточно</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ pred.prediction_date|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center">Нет предсказаний</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .badge {
+        padding: 0.4em 0.6em;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}

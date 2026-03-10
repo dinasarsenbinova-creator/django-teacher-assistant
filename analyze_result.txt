@@ -1,0 +1,27 @@
+﻿================================================================================
+└═└╦╚╟ HTML ╬╥┬┼╥└
+================================================================================
+
+─ышэр HTML: 18398 ёшьтюыют
+
+╧ЁютхЁър ¤ыхьхэЄют:
+python : Traceback (most recent call last):
+строка:1 знак:1
++ python analyze_html.py 2>&1 | Out-File -Encoding UTF8 analyze_result. ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last) 
+   ::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "P:\workspace\django_site\analyze_html.py", line 55, in <module>
+    print(f"{symbol} {check_name}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "C:\Users\рфшы№\AppData\Local\Programs\Python\Python313\Lib\encodings\cp
+1251.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position
+ 0: character maps to <undefined>
+

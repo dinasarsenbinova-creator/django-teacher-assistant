@@ -1,0 +1,96 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}{{ curriculum.title }} - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>📚 {{ curriculum.title }}</h1>
+    <p>{{ curriculum.subject }} | {{ curriculum.get_class_level_display }} | {{ curriculum.year }}</p>
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'teacher:curriculum_update' curriculum.pk %}" class="btn">Редактировать</a>
+        <a href="{% url 'teacher:curriculum_delete' curriculum.pk %}" class="btn btn-danger" onclick="return confirm('Удалить программу?')">Удалить программу</a>
+        <a href="{% url 'teacher:topic_list' curriculum.pk %}" class="btn" style="background-color: #3498db;">📚 Темы ({{ topics.count }})</a>
+        <a href="{% url 'teacher:curriculum_list' %}" class="btn" style="background-color: #95a5a6;">Назад</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div>
+        <div class="card">
+            <h3>📝 Темы программы ({{ topics.count }})</h3>
+            {% if topics %}
+                <table>
+                    <tr>
+                        <th>Название</th>
+                        <th>Часов</th>
+                    </tr>
+                    {% for topic in topics %}
+                        <tr>
+                            <td>{{ topic.title }}</td>
+                            <td style="text-align: center;">{{ topic.hours }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p style="color: #999;">Темы не добавлены</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3>✏️ Уроки по этой программе ({{ lessons.count }})</h3>
+            {% if lessons %}
+                <ul style="list-style: none;">
+                    {% for lesson in lessons %}
+                        <li style="padding: 0.5rem 0; border-bottom: 1px solid #ecf0f1;">
+                            <a href="{% url 'teacher:lesson_detail' lesson.pk %}" style="color: #3498db; text-decoration: none;">
+                                {{ lesson.title }}
+                            </a>
+                            <small style="color: #999; display: block;">{{ lesson.date|date:"d.m.Y" }}</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="color: #999;">Уроки не запланированы</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <div class="card">
+        <h3>📋 Тесты по этой программе ({{ tests.count }})</h3>
+        {% if tests %}
+            <table>
+                <tr>
+                    <th>Название</th>
+                    <th>Тип</th>
+                    <th>Класс</th>
+                </tr>
+                {% for test in tests %}
+                    <tr>
+                        <td><a href="{% url 'teacher:test_detail' test.pk %}" style="color: #3498db; text-decoration: none;">{{ test.title }}</a></td>
+                        <td>{{ test.get_test_type_display }}</td>
+                        <td>{{ test.class_name }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p style="color: #999;">Тесты не созданы</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .btn-danger {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c0392b;
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}

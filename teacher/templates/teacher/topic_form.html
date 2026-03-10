@@ -1,0 +1,146 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}{% if form.instance.pk %}Редактирование{% else %}Создание{% endif %} темы - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>
+        {% if form.instance.pk %}
+            ✏️ Редактирование темы
+        {% else %}
+            ➕ Создание новой темы
+        {% endif %}
+    </h1>
+</div>
+
+<div class="content" style="max-width: 600px;">
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h3>Программа: {{ curriculum.name }}</h3>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}"><strong>Название темы *</strong></label>
+            {{ form.title }}
+            <small style="color: #999; display: block; margin-top: 0.5rem;">
+                Введите краткое и понятное название темы
+            </small>
+            {% if form.title.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}"><strong>Описание</strong></label>
+            {{ form.description }}
+            <small style="color: #999; display: block; margin-top: 0.5rem;">
+                Подробное описание содержания темы (необязательно)
+            </small>
+            {% if form.description.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 2rem;">
+            <div class="form-group" style="flex: 1;">
+                <label for="{{ form.order.id_for_label }}"><strong>Порядок (№) *</strong></label>
+                {{ form.order }}
+                <small style="color: #999; display: block; margin-top: 0.5rem;">
+                    Номер темы в последовательности
+                </small>
+                {% if form.order.errors %}
+                    <div style="color: #e74c3c; margin-top: 0.5rem;">{{ form.order.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="flex: 1;">
+                <label for="{{ form.hours.id_for_label }}"><strong>Количество часов *</strong></label>
+                {{ form.hours }}
+                <small style="color: #999; display: block; margin-top: 0.5rem;">
+                    Часов на изучение темы
+                </small>
+                {% if form.hours.errors %}
+                    <div style="color: #e74c3c; margin-top: 0.5rem;">{{ form.hours.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-success" style="flex: 1; padding: 0.75rem;">
+                {% if form.instance.pk %}
+                    ✅ Сохранить изменения
+                {% else %}
+                    ➕ Создать тему
+                {% endif %}
+            </button>
+            <a href="{% url 'teacher:topic_list' curriculum.id %}" class="btn" style="flex: 1; padding: 0.75rem; background-color: #95a5a6; text-align: center;">
+                Отмена
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .form-group input[type="text"]:focus,
+    .form-group input[type="number"]:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #27ae60;
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+    }
+
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-success {
+        background-color: #27ae60;
+    }
+
+    .btn-success:hover {
+        background-color: #229954;
+    }
+</style>
+{% endblock %}

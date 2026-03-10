@@ -1,0 +1,235 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}{{ quiz.title }} - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🎯 {{ quiz.title }}</h1>
+    <p>Детальная информация о викторине</p>
+</div>
+
+<div class="content">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+            <div style="flex: 1;">
+                <h2 style="margin-bottom: 1rem;">Информация о викторине</h2>
+                
+                {% if quiz.description %}
+                    <p style="color: #666; margin-bottom: 1rem;">{{ quiz.description }}</p>
+                {% endif %}
+
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1rem; margin-bottom: 1rem;">
+                    {% if quiz.subject %}
+                        <strong>Предмет:</strong>
+                        <span>{{ quiz.subject }}</span>
+                    {% endif %}
+
+                    {% if quiz.class_name %}
+                        <strong>Группа:</strong>
+                        <span>{{ quiz.class_name }}</span>
+                    {% endif %}
+
+                    {% if quiz.curriculum %}
+                        <strong>Программа:</strong>
+                        <span>{{ quiz.curriculum }}</span>
+                    {% endif %}
+
+                    {% if quiz.topic %}
+                        <strong>Тема:</strong>
+                        <span>{{ quiz.topic }}</span>
+                    {% endif %}
+
+                    <strong>Сложность:</strong>
+                    <span>{{ quiz.get_difficulty_display }}</span>
+
+                    <strong>Вопросов:</strong>
+                    <span>{{ quiz.get_questions_count }}</span>
+
+                    <strong>Баллов:</strong>
+                    <span>{{ quiz.get_total_points }}</span>
+
+                    {% if quiz.time_limit > 0 %}
+                        <strong>Время:</strong>
+                        <span>{{ quiz.time_limit }} минут</span>
+                    {% endif %}
+
+                    <strong>Статус:</strong>
+                    <span>
+                        {% if quiz.is_active %}
+                            <span style="color: #28a745; font-weight: bold;">✓ Активна</span>
+                        {% else %}
+                            <span style="color: #6c757d;">✗ Неактивна</span>
+                        {% endif %}
+                    </span>
+
+                    <strong>Создана:</strong>
+                    <span>{{ quiz.created_at|date:"d.m.Y H:i" }}</span>
+
+                    {% if quiz.updated_at != quiz.created_at %}
+                        <strong>Обновлена:</strong>
+                        <span>{{ quiz.updated_at|date:"d.m.Y H:i" }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-left: 2rem;">
+                <a href="{% url 'teacher:quiz_update' quiz.pk %}" class="btn btn-primary">✏ Редактировать</a>
+                <a href="{% url 'teacher:quiz_take' quiz.pk %}" class="btn btn-success">▶ Пройти викторину</a>
+                     <a href="{% url 'teacher:quiz_participants' quiz.pk %}" class="btn">👥 Участники и результаты</a>
+                <button type="button" class="btn" onclick="copyStudentLink()">🔗 Скопировать ссылку для студентов</button>
+                <a href="{% url 'teacher:quiz_list' %}" class="btn">← Назад к списку</a>
+                <a href="{% url 'teacher:quiz_delete' quiz.pk %}" class="btn btn-danger" 
+                   onclick="return confirm('Удалить викторину?')">🗑 Удалить</a>
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 0.75rem; border: 1px solid #d1ecf1; background: #eef9ff; border-radius: 6px;">
+            <strong>Ссылка для студентов:</strong>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <input id="studentQuizLink" type="text" readonly value="{{ student_quiz_link }}" style="flex: 1; padding: 0.5rem; border: 1px solid #bcdff1; border-radius: 4px;">
+                <button type="button" class="btn btn-primary" onclick="copyStudentLink()">Копировать</button>
+            </div>
+            <small style="color: #31708f;">Отправьте эту ссылку студентам для прохождения викторины.</small>
+            {% if student_link_may_be_local %}
+                <div style="margin-top: 0.5rem; color: #856404; background: #fff3cd; border: 1px solid #ffeeba; padding: 0.5rem; border-radius: 4px;">
+                    Внимание: ссылка содержит localhost/127.0.0.1 и работает только на вашем компьютере.
+                    Для подключения студентов запустите сервер на 0.0.0.0 и используйте IP вашего компьютера в сети.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 2rem;">
+        <h3>📝 Вопросы ({{ questions.count }})</h3>
+        
+        {% if questions %}
+            <div style="margin-top: 1rem;">
+                {% for question in questions %}
+                    <div style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: #fafafa;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <h4 style="margin: 0 0 0.5rem 0; color: #333;">
+                                Вопрос {{ forloop.counter }}: {{ question.question_text }}
+                            </h4>
+                            <span style="padding: 0.25rem 0.5rem; background: #e8f5e8; color: #155724; border-radius: 4px; font-size: 0.875rem; font-weight: bold;">
+                                {{ question.points }} балл{{ question.points|pluralize:"ов" }}
+                            </span>
+                        </div>
+
+                        <div style="margin-top: 0.5rem; color: #666;">
+                            <strong>Тип:</strong> {{ question.get_question_type_display }}
+                        </div>
+
+                        {% if question.question_type == 'multiple_choice' or question.question_type == 'single_choice' %}
+                            {% if question.options %}
+                                <div style="margin-top: 0.5rem;">
+                                    <strong>Варианты ответов:</strong>
+                                    <ol style="margin: 0.5rem 0 0 1.5rem;">
+                                        {% for option in question.options %}
+                                            <li {% if forloop.counter0 == question.correct_answer %}style="color: #28a745; font-weight: bold;"{% endif %}>
+                                                {{ option }}
+                                                {% if forloop.counter0 == question.correct_answer %} ✓{% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ol>
+                                </div>
+                            {% endif %}
+                        {% elif question.question_type == 'true_false' %}
+                            <div style="margin-top: 0.5rem;">
+                                <strong>Правильный ответ:</strong>
+                                <span style="color: #28a745; font-weight: bold;">
+                                    {% if question.correct_answer %}Верно ✓{% else %}Неверно ✓{% endif %}
+                                </span>
+                            </div>
+                        {% else %}
+                            <div style="margin-top: 0.5rem;">
+                                <strong>Правильный ответ:</strong>
+                                <span style="color: #28a745; font-weight: bold;">{{ question.correct_answer }}</span>
+                            </div>
+                        {% endif %}
+
+                        {% if question.explanation %}
+                            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #e8f5e8; border-radius: 4px; font-size: 0.9rem; color: #155724;">
+                                <strong>💡 Пояснение:</strong> {{ question.explanation }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666; margin-top: 1rem;">В викторине пока нет вопросов</p>
+        {% endif %}
+    </div>
+
+    {% if attempts %}
+        <div class="card" style="margin-top: 2rem;">
+            <h3>📊 Последние попытки ({{ attempts.count }})</h3>
+            
+            <table style="margin-top: 1rem;">
+                <thead>
+                    <tr>
+                        <th>Студент</th>
+                        <th>Баллы</th>
+                        <th>Процент</th>
+                        <th>Время</th>
+                        <th>Дата</th>
+                        <th>Ответы</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                        <tr>
+                            <td>{{ attempt.student_name }}</td>
+                            <td>{{ attempt.score }}/{{ attempt.max_score }}</td>
+                            <td>
+                                <span style="color: {% if attempt.percentage >= 80 %}#28a745{% elif attempt.percentage >= 60 %}#ffc107{% else %}#dc3545{% endif %}; font-weight: bold;">
+                                    {{ attempt.percentage|floatformat:0 }}%
+                                </span>
+                            </td>
+                            <td>{{ attempt.time_spent }} сек</td>
+                            <td>{{ attempt.completed_at|date:"d.m.Y H:i" }}</td>
+                            <td><a href="{% url 'teacher:quiz_attempt_detail' attempt.id %}" class="btn btn-primary">Детали</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+tbody tr:hover {
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+function copyStudentLink() {
+    const input = document.getElementById('studentQuizLink');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try {
+        navigator.clipboard.writeText(input.value);
+        alert('Ссылка скопирована');
+    } catch (e) {
+        document.execCommand('copy');
+        alert('Ссылка скопирована');
+    }
+}
+</script>
+{% endblock %}

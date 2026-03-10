@@ -1,0 +1,40 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Удаление викторины - Ассистент педагога{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🗑 Удаление викторины</h1>
+    <p>Подтвердите удаление викторины</p>
+</div>
+
+<div class="content">
+    <div class="card">
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 4px; margin-bottom: 2rem;">
+            <strong>⚠️ Внимание!</strong> Вы собираетесь удалить викторину "<strong>{{ object.title }}</strong>". 
+            Это действие необратимо и удалит все вопросы и результаты прохождения.
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <h3>Информация о викторине:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li><strong>Название:</strong> {{ object.title }}</li>
+                {% if object.description %}
+                    <li><strong>Описание:</strong> {{ object.description }}</li>
+                {% endif %}
+                <li><strong>Вопросов:</strong> {{ object.get_questions_count }}</li>
+                <li><strong>Попыток прохождения:</strong> {{ object.attempts.count }}</li>
+                <li><strong>Создана:</strong> {{ object.created_at|date:"d.m.Y H:i" }}</li>
+            </ul>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-danger">🗑 Да, удалить викторину</button>
+                <a href="{% url 'teacher:quiz_detail' object.pk %}" class="btn">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

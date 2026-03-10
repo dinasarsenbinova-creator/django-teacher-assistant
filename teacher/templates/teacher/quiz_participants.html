@@ -1,0 +1,149 @@
+{% extends "teacher/base.html" %}
+
+{% block title %}Участники викторины{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>👥 Участники: {{ quiz.title }}</h1>
+    <p>Всего участников: {{ participants_count }}, попыток: {{ attempts_count }}</p>
+</div>
+
+<div class="content">
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <a href="{% url 'teacher:quiz_detail' quiz.id %}" class="btn">← Назад к викторине</a>
+    </div>
+
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <h3>Сводка по студентам</h3>
+        {% if participants %}
+            <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Студент</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Попыток</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Лучший результат</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Последняя попытка</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in participants %}
+                        <tr>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.student_name }}</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.attempts_count }}</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.best_score }} балл(ов), {{ p.best_percentage|floatformat:1 }}%</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.last_attempt|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="margin-top:1rem; color:#666;">Попыток пока нет.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Все попытки</h3>
+        {% if attempts %}
+            <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Студент</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Баллы</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Процент</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Дата</th>
+                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                        <tr>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.student_name }}</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.score }}/{{ attempt.max_score }}</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.percentage|floatformat:1 }}%</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.completed_at|date:"d.m.Y H:i" }}</td>
+                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">
+                                <a href="{% url 'teacher:quiz_attempt_detail' attempt.id %}" class="btn btn-primary" style="margin-right:0.5rem;">Ответы</a>
+                                <button type="button" class="btn btn-danger" onclick="deleteAttempt({{ attempt.id }}, '{{ attempt.student_name }}')">Удалить</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="margin-top:1rem; color:#666;">Попыток пока нет.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .btn-danger {
+        background-color: #ef4444;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.3s;
+    }
+    
+    .btn-danger:hover {
+        background-color: #dc2626;
+    }
+</style>
+
+<script>
+function deleteAttempt(attemptId, studentName) {
+    if (!confirm(`Вы уверены, что хотите удалить результат студента "${studentName}"?`)) {
+        return;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/teacher/quiz-attempts/${attemptId}/delete/`;
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        form.appendChild(csrfToken.cloneNode());
+    }
+    
+    form.style.display = 'none';
+    document.body.appendChild(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Результат удален');
+            location.reload();
+        } else {
+            alert('Ошибка при удалении: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при удалении результата');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

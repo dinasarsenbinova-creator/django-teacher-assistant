@@ -1,0 +1,148 @@
+{% extends "teacher/base.html" %}
+{% load static %}
+
+{% block title %}Модель: {{ model.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ model.name }}</h1>
+            <p class="text-muted">Программа: <strong>{{ model.curriculum.title }}</strong></p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a href="{% url 'teacher:nn_models_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> К списку
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация о модели</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row small">
+                        <dt class="col-sm-8">Статус:</dt>
+                        <dd class="col-sm-4">
+                            {% if model.is_active %}
+                                <span class="badge badge-success">Активна</span>
+                            {% else %}
+                                <span class="badge badge-secondary">Неактивна</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-8">Точность (MAE):</dt>
+                        <dd class="col-sm-4">
+                            <span class="badge badge-info">{{ model.accuracy|floatformat:4 }}</span>
+                        </dd>
+
+                        <dt class="col-sm-8">Примеров:</dt>
+                        <dd class="col-sm-4">{{ model.training_samples }}</dd>
+
+                        <dt class="col-sm-8">Предмет:</dt>
+                        <dd class="col-sm-4">{{ model.subject.name|default:"—" }}</dd>
+
+                        <dt class="col-sm-8">Создана:</dt>
+                        <dd class="col-sm-4">
+                            <small>{{ model.created_at|date:"d.m.Y H:i" }}</small>
+                        </dd>
+
+                        <dt class="col-sm-8">Обучена:</dt>
+                        <dd class="col-sm-4">
+                            <small>{{ model.last_trained|date:"d.m.Y H:i"|default:"—" }}</small>
+                        </dd>
+                    </dl>
+
+                    {% if model.description %}
+                        <hr>
+                        <h6>Описание:</h6>
+                        <p class="small">{{ model.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Описание модели</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-0">
+                        <h6>Архитектура нейросети:</h6>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Input Layer:</strong> 6 признаков (история оценок, посещаемость, домашние задания и т.д.)</li>
+                            <li><strong>Dense Layer 1:</strong> 32 нейрона, ReLU активация, Dropout 20%</li>
+                            <li><strong>Dense Layer 2:</strong> 16 нейронов, ReLU активация, Dropout 20%</li>
+                            <li><strong>Dense Layer 3:</strong> 8 нейронов, ReLU активация</li>
+                            <li><strong>Output Layer:</strong> 1 нейрон, Sigmoid активация (оценка 1-5)</li>
+                            <li><strong>Optimizer:</strong> Adam (learning rate 0.001)</li>
+                            <li><strong>Loss:</strong> Mean Squared Error (MSE)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Последние предсказания</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if predictions %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Студент</th>
+                                        <th>Предсказание</th>
+                                        <th>Уверенность</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pred in predictions %}
+                                        <tr>
+                                            <td><small>{{ pred.prediction_date|date:"d.m.Y H:i" }}</small></td>
+                                            <td>
+                                                <a href="{% url 'teacher:student_analysis' pred.student_name pred.curriculum.id %}">
+                                                    {{ pred.student_name|truncatewords:3 }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <strong>{{ pred.predicted_grade|floatformat:2 }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-secondary">{{ pred.confidence|floatformat:0 }}%</span>
+                                            </td>
+                                            <td>
+                                                {% if pred.is_accurate is None %}
+                                                    <span class="badge badge-warning">? Проверка</span>
+                                                {% elif pred.is_accurate %}
+                                                    <span class="badge badge-success">✓</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">✗</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center m-4">Нет предсказаний</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white border-top">
+                    <a href="{% url 'teacher:nn_model_statistics' model.id %}" class="btn btn-sm btn-primary">
+                        Полная статистика
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
