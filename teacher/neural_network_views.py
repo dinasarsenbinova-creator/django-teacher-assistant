@@ -899,17 +899,8 @@ def generate_quiz_questions(subject, topic, class_level, difficulty, questions_c
                 internet_quiz['generated_by'] = 'internet_ru'
                 return internet_quiz
 
-            # Пытаемся перевести на русский (предпочтительно через OpenAI).
-            translated_questions = _translate_questions_to_russian(questions)
-            if translated_questions:
-                internet_quiz['questions'] = translated_questions
-                internet_quiz['generated_by'] = 'internet_ru'
-                internet_quiz['description'] = (
-                    f'Викторина по теме "{topic or subject or "Общая тема"}" '
-                    'на основе интернет-источников (русская версия).'
-                )
-                return internet_quiz
-
+            # Для стабильности в продакшене не запускаем длительный этап перевода,
+            # чтобы избежать таймаутов и HTML 500 от gunicorn.
             internet_quiz['generated_by'] = 'internet'
             internet_quiz['warning'] = 'Вопросы получены из интернета без перевода на русский.'
             return internet_quiz
