@@ -815,6 +815,16 @@ def generate_quiz_helper(request):
                 deep_search=(deep_search == 'deep')
             )
 
+            # Гарантируем результат даже при частичных сбоях внешних источников
+            if not isinstance(quiz_data, dict) or not quiz_data.get('questions'):
+                quiz_data = generate_quiz_local(
+                    subject=subject_name,
+                    topic=topic_name,
+                    class_level=class_level,
+                    difficulty=difficulty,
+                    questions_count=questions_count,
+                )
+
             return JsonResponse({
                 'success': True,
                 'quiz': quiz_data
@@ -823,6 +833,24 @@ def generate_quiz_helper(request):
             import traceback
             error_details = traceback.format_exc()
             print(f"Quiz generation error: {error_details}")
+
+            # Последний fallback: возвращаем локальную викторину вместо ошибки 500
+            try:
+                fallback_quiz = generate_quiz_local(
+                    subject=subject_name,
+                    topic=topic_name,
+                    class_level=class_level,
+                    difficulty=difficulty,
+                    questions_count=questions_count,
+                )
+                return JsonResponse({
+                    'success': True,
+                    'quiz': fallback_quiz,
+                    'warning': 'Произошла ошибка ИИ/интернет-генерации, использованы локальные шаблоны.'
+                })
+            except Exception:
+                pass
+
             return JsonResponse({
                 'success': False,
                 'error': str(e),

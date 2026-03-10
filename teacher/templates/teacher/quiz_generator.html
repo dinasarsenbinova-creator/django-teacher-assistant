@@ -218,9 +218,12 @@ document.getElementById('quizForm').addEventListener('submit', function(e) {
         document.getElementById('loading').style.display = 'none';
 
         if (data.success) {
+            if (data.warning) {
+                showError(data.warning);
+            }
             displayQuiz(data.quiz);
         } else {
-            showError('Не удалось сгенерировать викторину');
+            showError(data.error || data.details || 'Не удалось сгенерировать викторину');
         }
     })
     .catch(error => {
