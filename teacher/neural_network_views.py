@@ -899,10 +899,20 @@ def generate_quiz_questions(subject, topic, class_level, difficulty, questions_c
                 internet_quiz['generated_by'] = 'internet_ru'
                 return internet_quiz
 
-            # Для стабильности в продакшене не запускаем длительный этап перевода,
-            # чтобы избежать таймаутов и HTML 500 от gunicorn.
+            # Быстрый перевод через публичный API (без OpenAI, чтобы избежать таймаутов)
+            translated_questions = _translate_questions_fast_ru(questions)
+            if translated_questions:
+                internet_quiz['questions'] = translated_questions
+                internet_quiz['generated_by'] = 'internet_ru'
+                internet_quiz['description'] = (
+                    f'Викторина по теме "{topic or subject or "Общая тема"}" '
+                    'на основе интернет-источников (перевод на русский).'
+                )
+                return internet_quiz
+
+            # Fallback: вернуть как есть, если перевод не удался
             internet_quiz['generated_by'] = 'internet'
-            internet_quiz['warning'] = 'Вопросы получены из интернета без перевода на русский.'
+            internet_quiz['warning'] = 'Вопросы получены из интернета без полного перевода.'
             return internet_quiz
 
         return internet_quiz
@@ -1088,6 +1098,33 @@ def _translate_text_to_russian(text):
         return translated or value
     except Exception:
         return value
+
+
+def _translate_questions_fast_ru(questions):
+    """Быстрый перевод вопросов на русский через публичный API (без OpenAI, чтобы избежать таймаутов)."""
+    if not questions:
+        return None
+
+    translated_questions = []
+    for q in questions:
+        item = dict(q)
+        item['question_text'] = _translate_text_to_russian(item.get('question_text', ''))
+        item['explanation'] = _translate_text_to_russian(item.get('explanation', ''))
+
+        options = item.get('options')
+        if isinstance(options, list):
+            item['options'] = [_translate_text_to_russian(opt) for opt in options]
+
+        answer = item.get('correct_answer')
+        if isinstance(answer, str):
+            item['correct_answer'] = _translate_text_to_russian(answer)
+
+        translated_questions.append(item)
+
+    if translated_questions and _quiz_is_russian(translated_questions):
+        return translated_questions
+
+    return None
 
 
 def _translate_questions_to_russian(questions):
