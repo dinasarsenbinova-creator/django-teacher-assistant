@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -74,11 +75,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "mysite.wsgi.application"
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Важно: в Railway нужно использовать PostgreSQL (DATABASE_URL),
+# иначе SQLite хранится на эфемерном диске и данные пропадают после redeploy.
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+IS_RAILWAY = bool(os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("RAILWAY_PROJECT_ID") or os.getenv("RAILWAY_SERVICE_ID"))
+
 if DATABASE_URL:
     DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
     }
+elif IS_RAILWAY or not DEBUG:
+    # Запрещаем тихий fallback на SQLite в production,
+    # чтобы не терять викторины/уроки после обновлений.
+    raise ImproperlyConfigured(
+        "DATABASE_URL не задан. Для production/Railway подключите PostgreSQL и задайте DATABASE_URL. "
+        "SQLite в production приведет к потере данных при redeploy."
+    )
 else:
     DATABASES = {
         "default": {
