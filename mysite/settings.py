@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -88,14 +87,14 @@ if DATABASE_URL:
             ssl_require=not DEBUG,
         )
     }
-elif IS_RAILWAY or not DEBUG:
-    # Запрещаем тихий fallback на SQLite в production,
-    # чтобы не терять викторины/уроки после обновлений.
-    raise ImproperlyConfigured(
-        "DATABASE_URL не задан. Для production/Railway подключите PostgreSQL и задайте DATABASE_URL. "
-        "SQLite в production приведет к потере данных при redeploy."
-    )
 else:
+    if IS_RAILWAY or not DEBUG:
+        # Важно: не валим приложение при старте, чтобы избежать полного простоя.
+        # Но явно предупреждаем в логах о риске потери данных на SQLite.
+        print(
+            "[WARNING] DATABASE_URL не задан. Используется SQLite fallback. "
+            "На Railway это может привести к потере данных при redeploy."
+        )
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

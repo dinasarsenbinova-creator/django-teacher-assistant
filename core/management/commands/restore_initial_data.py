@@ -22,5 +22,12 @@ class Command(BaseCommand):
             return
 
         self.stdout.write(f"Loading fixture: {fixture_path}")
-        call_command("loaddata", str(fixture_path))
-        self.stdout.write(self.style.SUCCESS("Initial data restored successfully."))
+        try:
+            call_command("loaddata", str(fixture_path))
+            self.stdout.write(self.style.SUCCESS("Initial data restored successfully."))
+        except Exception as exc:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Restore skipped due to error: {exc}. App startup continues."
+                )
+            )
