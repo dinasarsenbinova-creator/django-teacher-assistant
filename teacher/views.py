@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db.models import Q, Count, Avg, Max
 from django.db import models
 from django.views.generic import (
@@ -721,7 +722,20 @@ class QuizDeleteView(LoginRequiredMixin, DeleteView):
 def take_quiz(request, pk=None, quiz_id=None):
     """Прохождение викторины (пошаговая)"""
     target_id = pk if pk is not None else quiz_id
-    quiz = get_object_or_404(Quiz, pk=target_id)
+    if target_id is None:
+        messages.error(request, "Викторина не указана.")
+        return redirect('teacher:quiz_list')
+
+    quiz = Quiz.objects.filter(pk=target_id).first()
+    if quiz is None:
+        messages.error(request, f"Викторина с ID {target_id} не найдена. Выберите викторину из списка.")
+        return redirect('teacher:quiz_list')
+
+    # В режиме преподавателя проходить викторину может только владелец
+    if quiz.teacher_id != request.user.id:
+        messages.error(request, "У вас нет доступа к этой викторине.")
+        return redirect('teacher:quiz_list')
+
     questions = list(quiz.questions.all().order_by('order'))
     
     # DEBUG: Check questions loading
