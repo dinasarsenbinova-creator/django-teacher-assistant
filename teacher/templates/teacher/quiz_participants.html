@@ -69,63 +69,59 @@
 
     <div class="card" style="margin-bottom: 1.5rem;">
         <h3>Сводка по студентам</h3>
-        {% if participants %}
-            <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
-                <thead>
+        <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Студент</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Попыток</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Лучший результат</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Последняя попытка</th>
+                </tr>
+            </thead>
+            <tbody id="participantsTableBody">
+                {% for p in participants %}
                     <tr>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Студент</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Попыток</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Лучший результат</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Последняя попытка</th>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.student_name }}</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.attempts_count }}</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.best_score }} балл(ов), {{ p.best_percentage|floatformat:1 }}%</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.last_attempt|date:"d.m.Y H:i" }}</td>
                     </tr>
-                </thead>
-                <tbody id="participantsTableBody">
-                    {% for p in participants %}
-                        <tr>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.student_name }}</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.attempts_count }}</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.best_score }} балл(ов), {{ p.best_percentage|floatformat:1 }}%</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ p.last_attempt|date:"d.m.Y H:i" }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="margin-top:1rem; color:#666;">Попыток пока нет.</p>
-        {% endif %}
+                {% empty %}
+                    <tr><td colspan="4" style="padding:0.8rem; color:#666;">Попыток пока нет.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <div class="card">
         <h3>Все попытки</h3>
-        {% if attempts %}
-            <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
-                <thead>
-                    <tr>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Студент</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Баллы</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Процент</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Дата</th>
-                        <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Действие</th>
+        <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Студент</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Баллы</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Процент</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Дата</th>
+                    <th style="text-align:left; border-bottom:1px solid #ddd; padding:0.6rem;">Действие</th>
+                </tr>
+            </thead>
+            <tbody id="attemptsTableBody">
+                {% for attempt in attempts %}
+                    <tr data-attempt-id="{{ attempt.id }}">
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.student_name }}</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.score }}/{{ attempt.max_score }}</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.percentage|floatformat:1 }}%</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.completed_at|date:"d.m.Y H:i" }}</td>
+                        <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">
+                            <a href="{% url 'teacher:quiz_attempt_detail' attempt.id %}" class="btn btn-primary" style="margin-right:0.5rem;">Ответы</a>
+                            <button type="button" class="btn btn-danger" onclick="deleteAttempt({{ attempt.id }}, '{{ attempt.student_name }}')">Удалить</button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody id="attemptsTableBody">
-                    {% for attempt in attempts %}
-                        <tr data-attempt-id="{{ attempt.id }}">
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.student_name }}</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.score }}/{{ attempt.max_score }}</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.percentage|floatformat:1 }}%</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">{{ attempt.completed_at|date:"d.m.Y H:i" }}</td>
-                            <td style="padding:0.6rem; border-bottom:1px solid #f0f0f0;">
-                                <a href="{% url 'teacher:quiz_attempt_detail' attempt.id %}" class="btn btn-primary" style="margin-right:0.5rem;">Ответы</a>
-                                <button type="button" class="btn btn-danger" onclick="deleteAttempt({{ attempt.id }}, '{{ attempt.student_name }}')">Удалить</button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="margin-top:1rem; color:#666;">Попыток пока нет.</p>
-        {% endif %}
+                {% empty %}
+                    <tr><td colspan="5" style="padding:0.8rem; color:#666;">Попыток пока нет.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -244,10 +240,24 @@ function renderAttemptsRows(attempts) {
 
 async function refreshAttemptsLive() {
     try {
-        const response = await fetch('/teacher/api/quizzes/{{ quiz.id }}/participants/live/', {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        const response = await fetch('{% url "teacher:quiz_participants_live_data" quiz.id %}', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin',
+            cache: 'no-store'
         });
-        if (!response.ok) return;
+        if (!response.ok) {
+            console.warn('Live update HTTP error', response.status);
+            return;
+        }
+
+        const contentType = (response.headers.get('content-type') || '').toLowerCase();
+        if (!contentType.includes('application/json')) {
+            console.warn('Live update got non-JSON response');
+            return;
+        }
 
         const data = await response.json();
         if (!data.success) return;
@@ -261,6 +271,7 @@ async function refreshAttemptsLive() {
     }
 }
 
+refreshAttemptsLive();
 setInterval(refreshAttemptsLive, 5000);
 </script>
 {% endblock %}
